@@ -54,6 +54,37 @@ export const logout = createServerFn({ method: "POST" }).handler(async () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Escopo por empresa                                                  */
+/* ------------------------------------------------------------------ */
+
+type Sql = Awaited<ReturnType<typeof import("./db.server").db>>;
+
+/**
+ * Empresas que o usuário pode ver.
+ * null = sem restrição (admin, ou profissional sem vínculos marcados).
+ */
+async function allowedCompanyIds(
+  sql: Sql,
+  user: { id: string; global_role: string },
+): Promise<string[] | null> {
+  if (user.global_role === "administrador") return null;
+  const rows = await sql<{ company_id: string }[]>`
+    SELECT company_id FROM company_users WHERE user_id = ${user.id}`;
+  if (rows.length === 0) {
+    // Cliente sempre é restrito às empresas vinculadas; profissional sem vínculo vê tudo.
+    return user.global_role === "cliente" ? [] : null;
+  }
+  return rows.map((r) => r.company_id);
+}
+
+function assertCompanyAccess(allowed: string[] | null, companyId: string | null) {
+  if (!allowed) return;
+  if (!companyId || !allowed.includes(companyId)) {
+    throw new Error("SEM_ACESSO_EMPRESA");
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Leitura geral                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -64,17 +95,20 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
     const me = await requireUser();
     if (me.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, me);
+    const filter = allowed ? sql`WHERE company_id = ANY(${allowed})` : sql``;
+    const companyFilter = allowed ? sql`WHERE id = ANY(${allowed})` : sql``;
 
     const [users, companies, projects, actions, tasks, logs, companyUsers] = await Promise.all([
       sql<User[]>`SELECT id, name, email, global_role, active FROM users ORDER BY name`,
       sql<Company[]>`SELECT id, name, logo_url, color, contact_name, phone, email, notes, status,
                        is_demo
-                     FROM companies ORDER BY name`,
+                     FROM companies ${companyFilter} ORDER BY name`,
       sql<Project[]>`SELECT id, company_id, name, description, responsible_user_id,
                        to_char(start_date,'YYYY-MM-DD') AS start_date,
                        to_char(deadline,'YYYY-MM-DD') AS deadline,
                        status, progress
-                     FROM projects ORDER BY created_at DESC`,
+                      FROM projects ${filter} ORDER BY created_at DESC`,
       sql<Action[]>`SELECT id, company_id, project_id, title, description, action_type,
                       responsible_user_id,
                       to_char(action_date,'YYYY-MM-DD') AS action_date,
@@ -82,17 +116,17 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
                       to_char(start_time,'HH24:MI') AS start_time,
                       to_char(end_time,'HH24:MI') AS end_time,
                       status
-                    FROM actions ORDER BY action_date, start_time NULLS FIRST`,
+                    FROM actions ${filter} ORDER BY action_date, start_time NULLS FIRST`,
       sql<Task[]>`SELECT id, company_id, project_id, action_id, title, description,
                     responsible_user_id,
                     to_char(due_date,'YYYY-MM-DD') AS due_date,
                     priority, status,
                     to_char(completed_at,'YYYY-MM-DD"T"HH24:MI:SS') AS completed_at,
                     to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS') AS created_at
-                  FROM tasks ORDER BY due_date NULLS LAST, created_at DESC`,
+                  FROM tasks ${filter} ORDER BY due_date NULLS LAST, created_at DESC`,
       sql<ActivityLog[]>`SELECT id, user_id, company_id, entity_type, entity_id, action, detail,
                            to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS') AS created_at
-                         FROM activity_logs ORDER BY created_at DESC LIMIT 40`,
+                         FROM activity_logs ${filter} ORDER BY created_at DESC LIMIT 40`,
       sql<CompanyUser[]>`SELECT company_id, user_id, role FROM company_users`,
     ]);
 
@@ -175,7 +209,10 @@ export const saveCompany = createServerFn({ method: "POST" })
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
     const user = await requireUser();
+    if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.id ?? null);
     const v = {
       name: data.name.trim(),
       color: data.color,
@@ -203,8 +240,10 @@ export const deleteCompany = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.id);
     await sql`DELETE FROM companies WHERE id = ${data.id}`;
     return { ok: true };
   });
@@ -231,7 +270,10 @@ export const saveProject = createServerFn({ method: "POST" })
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
     const user = await requireUser();
+    if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.company_id);
     const v = {
       company_id: data.company_id,
       name: data.name.trim(),
@@ -259,8 +301,11 @@ export const deleteProject = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    const owner = await sql<{ company_id: string }[]>`SELECT company_id FROM projects WHERE id = ${data.id}`;
+    assertCompanyAccess(allowed, owner[0]?.company_id ?? null);
     await sql`DELETE FROM projects WHERE id = ${data.id}`;
     return { ok: true };
   });
@@ -290,7 +335,10 @@ export const saveAction = createServerFn({ method: "POST" })
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
     const user = await requireUser();
+    if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.company_id);
     const v = {
       company_id: data.company_id,
       project_id: data.project_id || null,
@@ -321,8 +369,11 @@ export const deleteAction = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    const owner = await sql<{ company_id: string }[]>`SELECT company_id FROM actions WHERE id = ${data.id}`;
+    assertCompanyAccess(allowed, owner[0]?.company_id ?? null);
     await sql`DELETE FROM actions WHERE id = ${data.id}`;
     return { ok: true };
   });
@@ -350,7 +401,10 @@ export const saveTask = createServerFn({ method: "POST" })
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
     const user = await requireUser();
+    if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.company_id);
     const v = {
       company_id: data.company_id,
       project_id: data.project_id || null,
@@ -387,6 +441,9 @@ export const setTaskStatus = createServerFn({ method: "POST" })
     const { db } = await import("./db.server");
     const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    const cur = await sql<{ company_id: string }[]>`SELECT company_id FROM tasks WHERE id = ${data.id}`;
+    assertCompanyAccess(allowed, cur[0]?.company_id ?? null);
     const rows = await sql<{ company_id: string; title: string }[]>`
       UPDATE tasks SET status = ${data.status}, updated_at = now(),
         completed_at = CASE WHEN ${data.status} = 'concluida' THEN now() ELSE NULL END
@@ -405,8 +462,11 @@ export const deleteTask = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    const owner = await sql<{ company_id: string }[]>`SELECT company_id FROM tasks WHERE id = ${data.id}`;
+    assertCompanyAccess(allowed, owner[0]?.company_id ?? null);
     await sql`DELETE FROM tasks WHERE id = ${data.id}`;
     return { ok: true };
   });
@@ -435,7 +495,7 @@ export const saveUser = createServerFn({ method: "POST" })
         await sql`UPDATE users SET password_hash = ${hash}, must_change_password = true
                   WHERE id = ${data.id}`;
       }
-      await syncCompanies(sql, data.id, data.company_ids);
+      await syncCompanies(sql, data.id, data.company_ids, data.global_role);
       return { id: data.id };
     }
     if (!data.password) return { id: null, error: "Senha obrigatória." };
@@ -445,22 +505,23 @@ export const saveUser = createServerFn({ method: "POST" })
       VALUES (${data.name.trim()}, ${email}, ${hash}, ${data.global_role}, ${data.active}, true)
       RETURNING id`;
     const id = rows[0]!.id;
-    await syncCompanies(sql, id, data.company_ids);
+    await syncCompanies(sql, id, data.company_ids, data.global_role);
     return { id };
   });
 
-/** Substitui os vínculos de empresa de um usuário (usado pelo acesso de cliente). */
+/** Substitui os vínculos de empresa de um usuário (portal de cliente e escopo da equipe). */
 async function syncCompanies(
   sql: Awaited<ReturnType<typeof import("./db.server").db>>,
   userId: string,
-  companyIds?: string[],
+  companyIds: string[] | undefined,
+  role: string,
 ) {
   if (!companyIds) return;
   await sql`DELETE FROM company_users WHERE user_id = ${userId}`;
   for (const companyId of companyIds) {
     await sql`INSERT INTO company_users (company_id, user_id, role)
-              VALUES (${companyId}, ${userId}, 'cliente')
-              ON CONFLICT (company_id, user_id) DO UPDATE SET role = 'cliente'`;
+              VALUES (${companyId}, ${userId}, ${role})
+              ON CONFLICT (company_id, user_id) DO UPDATE SET role = ${role}`;
   }
 }
 
