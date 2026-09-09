@@ -28,6 +28,9 @@ import { useInvalidateWorkspace, useWorkspace } from "@/lib/workspace";
 import type { User } from "@/lib/types";
 
 export const Route = createFileRoute("/_shell/usuarios")({
+  beforeLoad: ({ context }) => {
+    if (!isAdmin(context.user)) throw redirect({ to: "/" });
+  },
   head: () => ({
     meta: [
       { title: "Usuários · Automa Gestão" },
