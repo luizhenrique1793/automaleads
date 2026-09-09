@@ -167,6 +167,15 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
   const [role, setRole] = useState(user?.global_role ?? "colaborador");
   const [active, setActive] = useState(user?.active ?? true);
   const [saving, setSaving] = useState(false);
+  const { data: ws } = useWorkspace();
+  const [companyIds, setCompanyIds] = useState<string[]>(
+    user ? ws.companyUsers.filter((cu) => cu.user_id === user.id).map((cu) => cu.company_id) : [],
+  );
+  const isClientRole = role === "cliente";
+
+  function toggleCompany(id: string) {
+    setCompanyIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   async function onSubmit() {
     if (!name.trim() || !email.trim()) {
@@ -175,6 +184,10 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
     }
     if (!user && password.trim().length < 6) {
       toast.error("Defina uma senha com pelo menos 6 caracteres.");
+      return;
+    }
+    if (isClientRole && companyIds.length === 0) {
+      toast.error("Escolha pelo menos uma empresa para este cliente.");
       return;
     }
     setSaving(true);
