@@ -362,7 +362,10 @@ export const saveUser = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUser, hashPassword } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const current = await requireUser();
+    if (current.global_role !== "administrador") {
+      throw new Error("Apenas administradores podem gerenciar usuários.");
+    }
     const sql = await db();
     const email = data.email.trim().toLowerCase();
     if (data.id) {
