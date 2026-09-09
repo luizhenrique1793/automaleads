@@ -171,7 +171,7 @@ function ShellLayout() {
               <p className="text-[11px] text-muted-foreground">Gestão operacional</p>
             </div>
           </div>
-          <NavLinks />
+          <NavLinks admin={admin} />
           <div className="mt-auto border-t border-sidebar-border pt-3">
             <div className="px-2 pb-2">
               <p className="truncate text-xs font-semibold">{user.name}</p>
@@ -198,7 +198,15 @@ function ShellLayout() {
               </Button>
               <span className="text-sm font-semibold lg:hidden">Automa</span>
             </div>
-            <QuickCreate />
+            <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm" className="gap-1.5">
+                <Link to="/ajuda">
+                  <HelpCircle className="size-4" />
+                  <span className="hidden sm:inline">Ajuda</span>
+                </Link>
+              </Button>
+              <QuickCreate />
+            </div>
           </header>
 
           <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 lg:px-8 lg:py-8">
@@ -209,7 +217,7 @@ function ShellLayout() {
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent side="left" className="w-64 p-4">
             <SheetTitle className="mb-4 text-sm">Automa</SheetTitle>
-            <NavLinks onNavigate={() => setMobileOpen(false)} />
+            <NavLinks admin={admin} onNavigate={() => setMobileOpen(false)} />
             <div className="mt-6 border-t border-border pt-3">
               <p className="px-1 text-xs font-semibold">{user.name}</p>
               <Button
@@ -224,6 +232,8 @@ function ShellLayout() {
             </div>
           </SheetContent>
         </Sheet>
+
+        {showOnboarding ? <OnboardingDialog /> : null}
       </div>
     </FormsProvider>
   );
