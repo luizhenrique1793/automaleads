@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus } from "lucide-react";
@@ -23,9 +23,20 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { PageHeader, Pill } from "@/components/app/primitives";
-import { saveUser } from "@/lib/api.functions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { clearDemoData, saveUser } from "@/lib/api.functions";
 import { useInvalidateWorkspace, useWorkspace } from "@/lib/workspace";
-import type { User } from "@/lib/types";
+import { isAdmin, type User } from "@/lib/types";
 
 export const Route = createFileRoute("/_shell/usuarios")({
   beforeLoad: ({ context }) => {
