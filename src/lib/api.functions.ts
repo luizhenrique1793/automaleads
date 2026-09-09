@@ -209,7 +209,10 @@ export const saveCompany = createServerFn({ method: "POST" })
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
     const user = await requireUser();
+    if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.id ?? null);
     const v = {
       name: data.name.trim(),
       color: data.color,
@@ -237,8 +240,10 @@ export const deleteCompany = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.id);
     await sql`DELETE FROM companies WHERE id = ${data.id}`;
     return { ok: true };
   });
@@ -265,7 +270,10 @@ export const saveProject = createServerFn({ method: "POST" })
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
     const user = await requireUser();
+    if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.company_id);
     const v = {
       company_id: data.company_id,
       name: data.name.trim(),
@@ -293,8 +301,11 @@ export const deleteProject = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    const owner = await sql<{ company_id: string }[]>`SELECT company_id FROM projects WHERE id = ${data.id}`;
+    assertCompanyAccess(allowed, owner[0]?.company_id ?? null);
     await sql`DELETE FROM projects WHERE id = ${data.id}`;
     return { ok: true };
   });
@@ -324,7 +335,10 @@ export const saveAction = createServerFn({ method: "POST" })
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
     const user = await requireUser();
+    if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.company_id);
     const v = {
       company_id: data.company_id,
       project_id: data.project_id || null,
@@ -355,8 +369,11 @@ export const deleteAction = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    const owner = await sql<{ company_id: string }[]>`SELECT company_id FROM actions WHERE id = ${data.id}`;
+    assertCompanyAccess(allowed, owner[0]?.company_id ?? null);
     await sql`DELETE FROM actions WHERE id = ${data.id}`;
     return { ok: true };
   });
@@ -384,7 +401,10 @@ export const saveTask = createServerFn({ method: "POST" })
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
     const user = await requireUser();
+    if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    assertCompanyAccess(allowed, data.company_id);
     const v = {
       company_id: data.company_id,
       project_id: data.project_id || null,
@@ -421,6 +441,9 @@ export const setTaskStatus = createServerFn({ method: "POST" })
     const { db } = await import("./db.server");
     const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    const cur = await sql<{ company_id: string }[]>`SELECT company_id FROM tasks WHERE id = ${data.id}`;
+    assertCompanyAccess(allowed, cur[0]?.company_id ?? null);
     const rows = await sql<{ company_id: string; title: string }[]>`
       UPDATE tasks SET status = ${data.status}, updated_at = now(),
         completed_at = CASE WHEN ${data.status} = 'concluida' THEN now() ELSE NULL END
@@ -439,8 +462,11 @@ export const deleteTask = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const user = await requireUser();
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    const owner = await sql<{ company_id: string }[]>`SELECT company_id FROM tasks WHERE id = ${data.id}`;
+    assertCompanyAccess(allowed, owner[0]?.company_id ?? null);
     await sql`DELETE FROM tasks WHERE id = ${data.id}`;
     return { ok: true };
   });
