@@ -54,6 +54,37 @@ export const logout = createServerFn({ method: "POST" }).handler(async () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Escopo por empresa                                                  */
+/* ------------------------------------------------------------------ */
+
+type Sql = Awaited<ReturnType<typeof import("./db.server").db>>;
+
+/**
+ * Empresas que o usuário pode ver.
+ * null = sem restrição (admin, ou profissional sem vínculos marcados).
+ */
+async function allowedCompanyIds(
+  sql: Sql,
+  user: { id: string; global_role: string },
+): Promise<string[] | null> {
+  if (user.global_role === "administrador") return null;
+  const rows = await sql<{ company_id: string }[]>`
+    SELECT company_id FROM company_users WHERE user_id = ${user.id}`;
+  if (rows.length === 0) {
+    // Cliente sempre é restrito às empresas vinculadas; profissional sem vínculo vê tudo.
+    return user.global_role === "cliente" ? [] : null;
+  }
+  return rows.map((r) => r.company_id);
+}
+
+function assertCompanyAccess(allowed: string[] | null, companyId: string | null) {
+  if (!allowed) return;
+  if (!companyId || !allowed.includes(companyId)) {
+    throw new Error("SEM_ACESSO_EMPRESA");
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Leitura geral                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -64,12 +95,15 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
     const me = await requireUser();
     if (me.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
+    const allowed = await allowedCompanyIds(sql, me);
+    const filter = allowed ? sql`WHERE company_id = ANY(${allowed})` : sql``;
+    const companyFilter = allowed ? sql`WHERE id = ANY(${allowed})` : sql``;
 
     const [users, companies, projects, actions, tasks, logs, companyUsers] = await Promise.all([
       sql<User[]>`SELECT id, name, email, global_role, active FROM users ORDER BY name`,
       sql<Company[]>`SELECT id, name, logo_url, color, contact_name, phone, email, notes, status,
                        is_demo
-                     FROM companies ORDER BY name`,
+                     FROM companies ${companyFilter} ORDER BY name`,
       sql<Project[]>`SELECT id, company_id, name, description, responsible_user_id,
                        to_char(start_date,'YYYY-MM-DD') AS start_date,
                        to_char(deadline,'YYYY-MM-DD') AS deadline,
