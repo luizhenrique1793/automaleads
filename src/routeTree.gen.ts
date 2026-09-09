@@ -9,50 +9,152 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShellRouteImport } from './routes/_shell'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ShellIndexRouteImport } from './routes/_shell/index'
+import { Route as ShellCalendarioRouteImport } from './routes/_shell/calendario'
+import { Route as ShellSemanaRouteImport } from './routes/_shell/semana'
+import { Route as ShellTarefasRouteImport } from './routes/_shell/tarefas'
 
-const IndexRoute = IndexRouteImport.update({
+const ShellRoute = ShellRouteImport.update({
+  id: '/_shell',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShellIndexRoute = ShellIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellCalendarioRoute = ShellCalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellSemanaRoute = ShellSemanaRouteImport.update({
+  id: '/semana',
+  path: '/semana',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellTarefasRoute = ShellTarefasRouteImport.update({
+  id: '/tarefas',
+  path: '/tarefas',
+  getParentRoute: () => ShellRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof ShellIndexRoute
+  '/login': typeof LoginRoute
+  '/calendario': typeof ShellCalendarioRoute
+  '/semana': typeof ShellSemanaRoute
+  '/tarefas': typeof ShellTarefasRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/calendario': typeof ShellCalendarioRoute
+  '/semana': typeof ShellSemanaRoute
+  '/tarefas': typeof ShellTarefasRoute
+  '/': typeof ShellIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_shell': typeof ShellRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_shell/calendario': typeof ShellCalendarioRoute
+  '/_shell/semana': typeof ShellSemanaRoute
+  '/_shell/tarefas': typeof ShellTarefasRoute
+  '/_shell/': typeof ShellIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/login' | '/calendario' | '/semana' | '/tarefas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/login' | '/calendario' | '/semana' | '/tarefas' | '/'
+  id:
+    | '__root__'
+    | '/_shell'
+    | '/login'
+    | '/_shell/calendario'
+    | '/_shell/semana'
+    | '/_shell/tarefas'
+    | '/_shell/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  ShellRoute: typeof ShellRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_shell': {
+      id: '/_shell'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ShellRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_shell/': {
+      id: '/_shell/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ShellIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/calendario': {
+      id: '/_shell/calendario'
+      path: '/calendario'
+      fullPath: '/calendario'
+      preLoaderRoute: typeof ShellCalendarioRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/semana': {
+      id: '/_shell/semana'
+      path: '/semana'
+      fullPath: '/semana'
+      preLoaderRoute: typeof ShellSemanaRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/tarefas': {
+      id: '/_shell/tarefas'
+      path: '/tarefas'
+      fullPath: '/tarefas'
+      preLoaderRoute: typeof ShellTarefasRouteImport
+      parentRoute: typeof ShellRoute
     }
   }
 }
 
+interface ShellRouteChildren {
+  ShellCalendarioRoute: typeof ShellCalendarioRoute
+  ShellSemanaRoute: typeof ShellSemanaRoute
+  ShellTarefasRoute: typeof ShellTarefasRoute
+  ShellIndexRoute: typeof ShellIndexRoute
+}
+
+const ShellRouteChildren: ShellRouteChildren = {
+  ShellCalendarioRoute: ShellCalendarioRoute,
+  ShellSemanaRoute: ShellSemanaRoute,
+  ShellTarefasRoute: ShellTarefasRoute,
+  ShellIndexRoute: ShellIndexRoute,
+}
+
+const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  ShellRoute: ShellRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

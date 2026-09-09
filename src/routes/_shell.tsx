@@ -1,0 +1,174 @@
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  redirect,
+  useRouter,
+} from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import {
+  CalendarDays,
+  CalendarRange,
+  Building2,
+  FolderKanban,
+  CheckSquare,
+  Sparkles,
+  LayoutDashboard,
+  Users,
+  Plus,
+  Menu,
+  LogOut,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { getMe, logout } from "@/lib/api.functions";
+import { FormsProvider, useForms } from "@/components/app/forms";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/_shell")({
+  beforeLoad: async () => {
+    const res = await getMe();
+    if (!res.user) throw redirect({ to: "/login" });
+    return { user: res.user };
+  },
+  component: ShellLayout,
+});
+
+const NAV = [
+  { to: "/", label: "Início", icon: LayoutDashboard, exact: true },
+  { to: "/semana", label: "Minha semana", icon: CalendarRange, exact: false },
+  { to: "/calendario", label: "Calendário", icon: CalendarDays, exact: false },
+  { to: "/empresas", label: "Empresas", icon: Building2, exact: false },
+  { to: "/projetos", label: "Projetos", icon: FolderKanban, exact: false },
+  { to: "/tarefas", label: "Tarefas", icon: CheckSquare, exact: false },
+  { to: "/acoes", label: "Ações", icon: Sparkles, exact: false },
+  { to: "/usuarios", label: "Usuários", icon: Users, exact: false },
+] as const;
+
+function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <nav className="space-y-0.5">
+      {NAV.map(({ to, label, icon: Icon, exact }) => (
+        <Link
+          key={to}
+          to={to}
+          onClick={onNavigate}
+          activeOptions={{ exact }}
+          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"
+        >
+          <Icon className="size-4 shrink-0" />
+          {label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+function QuickCreate({ className }: { className?: string }) {
+  const { openTask, openAction, openProject } = useForms();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="sm" className={cn("gap-1.5", className)}>
+          <Plus className="size-4" />
+          Criar
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem onSelect={() => openTask()}>Nova tarefa</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => openAction()}>Nova ação</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => openProject()}>Novo projeto</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ShellLayout() {
+  const { user } = Route.useRouteContext();
+  const router = useRouter();
+  const doLogout = useServerFn(logout);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  async function signOut() {
+    await doLogout();
+    await router.invalidate();
+    await router.navigate({ to: "/login", replace: true });
+  }
+
+  return (
+    <FormsProvider>
+      <div className="flex min-h-screen bg-background">
+        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 lg:flex">
+          <div className="mb-6 flex items-center gap-2 px-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+              A
+            </div>
+            <div className="leading-tight">
+              <p className="text-sm font-bold">Automa</p>
+              <p className="text-[11px] text-muted-foreground">Gestão operacional</p>
+            </div>
+          </div>
+          <NavLinks />
+          <div className="mt-auto border-t border-sidebar-border pt-3">
+            <div className="px-2 pb-2">
+              <p className="truncate text-xs font-semibold">{user.name}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+            </div>
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={signOut}>
+              <LogOut className="size-4" />
+              Sair
+            </Button>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur lg:px-8">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setMobileOpen(true)}
+                aria-label="Abrir menu"
+              >
+                <Menu className="size-5" />
+              </Button>
+              <span className="text-sm font-semibold lg:hidden">Automa</span>
+            </div>
+            <QuickCreate />
+          </header>
+
+          <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 lg:px-8 lg:py-8">
+            <Outlet />
+          </main>
+        </div>
+
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="left" className="w-64 p-4">
+            <SheetTitle className="mb-4 text-sm">Automa</SheetTitle>
+            <NavLinks onNavigate={() => setMobileOpen(false)} />
+            <div className="mt-6 border-t border-border pt-3">
+              <p className="px-1 text-xs font-semibold">{user.name}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2 w-full justify-start gap-2"
+                onClick={signOut}
+              >
+                <LogOut className="size-4" />
+                Sair
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </FormsProvider>
+  );
+}
