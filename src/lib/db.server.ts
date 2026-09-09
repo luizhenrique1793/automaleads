@@ -63,6 +63,8 @@ async function ensureSchema(sql: Sql) {
   const marked = await sql<{ key: string }[]>`SELECT key FROM app_meta WHERE key = 'demo_marked'`;
   if (marked.length === 0) {
     await sql`UPDATE companies SET is_demo = true WHERE name = ANY(${DEMO_COMPANY_NAMES})`;
+    // Senha inicial era pública: exigir troca no próximo acesso.
+    await sql`UPDATE users SET must_change_password = true`;
     await sql`INSERT INTO app_meta (key, value) VALUES ('demo_marked', 'true')
               ON CONFLICT (key) DO NOTHING`;
   }
