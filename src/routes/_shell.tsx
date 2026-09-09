@@ -95,11 +95,62 @@ function QuickCreate({ className }: { className?: string }) {
   );
 }
 
+function OnboardingDialog() {
+  const router = useRouter();
+  const done = useServerFn(completeOnboarding);
+  const [open, setOpen] = useState(true);
+
+  async function finish(goTo?: "/empresas") {
+    setOpen(false);
+    await done();
+    await router.invalidate();
+    if (goTo) await router.navigate({ to: goTo });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && void finish()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Bem-vindo ao Automa</DialogTitle>
+          <DialogDescription>
+            São só quatro passos para começar a organizar o trabalho dos seus clientes.
+          </DialogDescription>
+        </DialogHeader>
+        <ol className="space-y-3 text-sm">
+          {[
+            ["1. Cadastre suas empresas", "Cada cliente vira uma empresa, com nome e cor própria."],
+            ["2. Crie os projetos", "Trabalhos maiores, como um novo site ou uma campanha."],
+            [
+              "3. Registre as ações",
+              "Reuniões, treinamentos, visitas e entregas com data e horário.",
+            ],
+            ["4. Crie as tarefas", "O que precisa ser feito, com prazo e responsável."],
+          ].map(([t, d]) => (
+            <li key={t}>
+              <p className="font-semibold">{t}</p>
+              <p className="text-muted-foreground">{d}</p>
+            </li>
+          ))}
+        </ol>
+        <DialogFooter className="flex-row justify-end gap-2">
+          <Button variant="outline" onClick={() => void finish()}>
+            Explorar sozinho
+          </Button>
+          <Button onClick={() => void finish("/empresas")}>Começar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ShellLayout() {
   const { user } = Route.useRouteContext();
   const router = useRouter();
   const doLogout = useServerFn(logout);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const admin = isAdmin(user);
+  const showOnboarding = user.onboarding_done === false && !user.must_change_password;
+
 
   async function signOut() {
     await doLogout();
