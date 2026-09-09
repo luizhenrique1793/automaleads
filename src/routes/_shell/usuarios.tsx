@@ -65,7 +65,21 @@ const ROLES: Record<string, string> = {
 
 function UsersPage() {
   const { data } = useWorkspace();
+  const invalidate = useInvalidateWorkspace();
+  const removeDemo = useServerFn(clearDemoData);
   const [editing, setEditing] = useState<{ value: User | null } | null>(null);
+  const demoCount = data.companies.filter((c) => c.is_demo).length;
+
+  async function handleClearDemo() {
+    const res = await removeDemo();
+    await invalidate();
+    toast.success(
+      res.removed > 0
+        ? `${res.removed} empresa(s) de exemplo removida(s).`
+        : "Nenhum dado de exemplo encontrado.",
+    );
+  }
+
 
   return (
     <>
@@ -99,6 +113,43 @@ function UsersPage() {
           </button>
         ))}
       </div>
+
+      {demoCount > 0 ? (
+        <div className="card-surface mt-6 flex flex-wrap items-center justify-between gap-3 p-4">
+          <div>
+            <p className="text-sm font-semibold">Dados de exemplo</p>
+            <p className="text-sm text-muted-foreground">
+              {demoCount} empresa(s) de demonstração, com seus projetos, ações e tarefas. Remova
+              quando começar a usar de verdade.
+            </p>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                Limpar dados de exemplo
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remover os dados de exemplo?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  As empresas de demonstração e tudo que pertence a elas serão apagados. Os usuários
+                  e os dados que você criou permanecem.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-white hover:bg-destructive/90"
+                  onClick={() => void handleClearDemo()}
+                >
+                  Remover
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      ) : null}
 
       {editing ? (
         <UserSheet user={editing.value} onClose={() => setEditing(null)} />
