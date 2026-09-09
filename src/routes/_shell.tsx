@@ -50,6 +50,9 @@ export const Route = createFileRoute("/_shell")({
     if (res.user.must_change_password && location.pathname !== "/conta") {
       throw redirect({ to: "/conta" });
     }
+    if (res.user.global_role === "cliente" && location.pathname !== "/conta") {
+      throw redirect({ to: "/portal" });
+    }
     return { user: res.user };
   },
   component: ShellLayout,
