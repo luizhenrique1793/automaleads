@@ -51,7 +51,7 @@ export const Route = createFileRoute("/_shell")({
       throw redirect({ to: "/conta" });
     }
     if (res.user.global_role === "cliente" && location.pathname !== "/conta") {
-      throw redirect({ to: "/portal" });
+      throw redirect({ to: "/portal", search: { aba: "painel", dia: undefined } });
     }
     return { user: res.user };
   },

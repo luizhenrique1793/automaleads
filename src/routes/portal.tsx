@@ -25,11 +25,12 @@ import { cn } from "@/lib/utils";
 type Tab = "painel" | "tarefas" | "acoes";
 
 export const Route = createFileRoute("/portal")({
-  validateSearch: (search: Record<string, unknown>): { aba: Tab; dia?: string } => {
-    const aba = search.aba === "tarefas" || search.aba === "acoes" ? search.aba : "painel";
-    const dia = typeof search.dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search.dia)
-      ? search.dia
-      : undefined;
+  validateSearch: (search: Record<string, unknown>): { aba: Tab; dia: string | undefined } => {
+    const raw = search["aba"];
+    const aba: Tab = raw === "tarefas" || raw === "acoes" ? raw : "painel";
+    const rawDia = search["dia"];
+    const dia =
+      typeof rawDia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawDia) ? rawDia : undefined;
     return { aba, dia };
   },
   head: () => ({
@@ -191,7 +192,7 @@ function PortalPage() {
           ) : aba === "tarefas" ? (
             <TasksView ctx={ctx} />
           ) : (
-            <ActionsView ctx={ctx} dia={dia} />
+            <ActionsView ctx={ctx} dia={dia ?? undefined} />
           )
         ) : null}
       </main>
