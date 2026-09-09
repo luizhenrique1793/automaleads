@@ -2,7 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import type {
   Action,
   ActivityLog,
+  ClientPortal,
   Company,
+  CompanyUser,
   Project,
   Task,
   User,
@@ -59,10 +61,11 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
   async (): Promise<Workspace> => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const me = await requireUser();
+    if (me.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
 
-    const [users, companies, projects, actions, tasks, logs] = await Promise.all([
+    const [users, companies, projects, actions, tasks, logs, companyUsers] = await Promise.all([
       sql<User[]>`SELECT id, name, email, global_role, active FROM users ORDER BY name`,
       sql<Company[]>`SELECT id, name, logo_url, color, contact_name, phone, email, notes, status,
                        is_demo
@@ -90,9 +93,63 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
       sql<ActivityLog[]>`SELECT id, user_id, company_id, entity_type, entity_id, action, detail,
                            to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS') AS created_at
                          FROM activity_logs ORDER BY created_at DESC LIMIT 40`,
+      sql<CompanyUser[]>`SELECT company_id, user_id, role FROM company_users`,
     ]);
 
-    return { users, companies, projects, actions, tasks, logs };
+    return { users, companies, projects, actions, tasks, logs, companyUsers };
+  },
+);
+
+/* ------------------------------------------------------------------ */
+/* Portal do cliente                                                   */
+/* ------------------------------------------------------------------ */
+
+export const getClientPortal = createServerFn({ method: "GET" }).handler(
+  async (): Promise<ClientPortal> => {
+    const { requireUser } = await import("./auth.server");
+    const { db } = await import("./db.server");
+    const user = await requireUser();
+    const sql = await db();
+
+    const companies = await sql<Company[]>`
+      SELECT c.id, c.name, c.logo_url, c.color, c.contact_name, c.phone, c.email, c.notes,
+             c.status, c.is_demo
+      FROM companies c
+      JOIN company_users cu ON cu.company_id = c.id
+      WHERE cu.user_id = ${user.id}
+      ORDER BY c.name`;
+
+    const ids = companies.map((c) => c.id);
+    if (ids.length === 0) {
+      return { companies, projects: [], actions: [], tasks: [] };
+    }
+
+    const [projects, actions, tasks] = await Promise.all([
+      sql<Project[]>`SELECT id, company_id, name, description, responsible_user_id,
+                       to_char(start_date,'YYYY-MM-DD') AS start_date,
+                       to_char(deadline,'YYYY-MM-DD') AS deadline,
+                       status, progress
+                     FROM projects WHERE company_id = ANY(${ids}) ORDER BY name`,
+      sql<Action[]>`SELECT id, company_id, project_id, title, description, action_type,
+                      responsible_user_id,
+                      to_char(action_date,'YYYY-MM-DD') AS action_date,
+                      all_day,
+                      to_char(start_time,'HH24:MI') AS start_time,
+                      to_char(end_time,'HH24:MI') AS end_time,
+                      status
+                    FROM actions WHERE company_id = ANY(${ids})
+                    ORDER BY action_date DESC, start_time NULLS FIRST`,
+      sql<Task[]>`SELECT id, company_id, project_id, action_id, title, description,
+                    responsible_user_id,
+                    to_char(due_date,'YYYY-MM-DD') AS due_date,
+                    priority, status,
+                    to_char(completed_at,'YYYY-MM-DD"T"HH24:MI:SS') AS completed_at,
+                    to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS') AS created_at
+                  FROM tasks WHERE company_id = ANY(${ids})
+                  ORDER BY due_date NULLS LAST, created_at DESC`,
+    ]);
+
+    return { companies, projects, actions, tasks };
   },
 );
 
@@ -359,7 +416,7 @@ export const deleteTask = createServerFn({ method: "POST" })
 /* ------------------------------------------------------------------ */
 
 export const saveUser = createServerFn({ method: "POST" })
-  .inputValidator((d: { id?: string | null; name: string; email: string; password?: string | null; global_role: string; active: boolean }) => d)
+  .inputValidator((d: { id?: string | null; name: string; email: string; password?: string | null; global_role: string; active: boolean; company_ids?: string[] }) => d)
   .handler(async ({ data }) => {
     const { requireUser, hashPassword } = await import("./auth.server");
     const { db } = await import("./db.server");
@@ -378,6 +435,7 @@ export const saveUser = createServerFn({ method: "POST" })
         await sql`UPDATE users SET password_hash = ${hash}, must_change_password = true
                   WHERE id = ${data.id}`;
       }
+      await syncCompanies(sql, data.id, data.company_ids);
       return { id: data.id };
     }
     if (!data.password) return { id: null, error: "Senha obrigatória." };
@@ -386,8 +444,25 @@ export const saveUser = createServerFn({ method: "POST" })
       INSERT INTO users (name, email, password_hash, global_role, active, must_change_password)
       VALUES (${data.name.trim()}, ${email}, ${hash}, ${data.global_role}, ${data.active}, true)
       RETURNING id`;
-    return { id: rows[0]!.id };
+    const id = rows[0]!.id;
+    await syncCompanies(sql, id, data.company_ids);
+    return { id };
   });
+
+/** Substitui os vínculos de empresa de um usuário (usado pelo acesso de cliente). */
+async function syncCompanies(
+  sql: Awaited<ReturnType<typeof import("./db.server").db>>,
+  userId: string,
+  companyIds?: string[],
+) {
+  if (!companyIds) return;
+  await sql`DELETE FROM company_users WHERE user_id = ${userId}`;
+  for (const companyId of companyIds) {
+    await sql`INSERT INTO company_users (company_id, user_id, role)
+              VALUES (${companyId}, ${userId}, 'cliente')
+              ON CONFLICT (company_id, user_id) DO UPDATE SET role = 'cliente'`;
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /* Minha conta                                                         */

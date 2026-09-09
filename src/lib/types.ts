@@ -38,6 +38,10 @@ export function isAdmin(user: { global_role: string } | null | undefined): boole
   return user?.global_role === "administrador";
 }
 
+export function isClient(user: { global_role: string } | null | undefined): boolean {
+  return user?.global_role === "cliente";
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -104,6 +108,12 @@ export interface ActivityLog {
   created_at: string;
 }
 
+export interface CompanyUser {
+  company_id: string;
+  user_id: string;
+  role: string;
+}
+
 export interface Workspace {
   users: User[];
   companies: Company[];
@@ -111,6 +121,14 @@ export interface Workspace {
   actions: Action[];
   tasks: Task[];
   logs: ActivityLog[];
+  companyUsers: CompanyUser[];
+}
+
+export interface ClientPortal {
+  companies: Company[];
+  projects: Project[];
+  actions: Action[];
+  tasks: Task[];
 }
 
 export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {

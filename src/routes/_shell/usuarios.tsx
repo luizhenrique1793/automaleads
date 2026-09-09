@@ -167,6 +167,15 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
   const [role, setRole] = useState(user?.global_role ?? "colaborador");
   const [active, setActive] = useState(user?.active ?? true);
   const [saving, setSaving] = useState(false);
+  const { data: ws } = useWorkspace();
+  const [companyIds, setCompanyIds] = useState<string[]>(
+    user ? ws.companyUsers.filter((cu) => cu.user_id === user.id).map((cu) => cu.company_id) : [],
+  );
+  const isClientRole = role === "cliente";
+
+  function toggleCompany(id: string) {
+    setCompanyIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   async function onSubmit() {
     if (!name.trim() || !email.trim()) {
@@ -175,6 +184,10 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
     }
     if (!user && password.trim().length < 6) {
       toast.error("Defina uma senha com pelo menos 6 caracteres.");
+      return;
+    }
+    if (isClientRole && companyIds.length === 0) {
+      toast.error("Escolha pelo menos uma empresa para este cliente.");
       return;
     }
     setSaving(true);
@@ -187,6 +200,7 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
           password: password.trim() ? password.trim() : null,
           global_role: role,
           active,
+          company_ids: isClientRole ? companyIds : [],
         },
       });
       await invalidate();
@@ -248,6 +262,31 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
               </SelectContent>
             </Select>
           </div>
+          {isClientRole ? (
+            <div className="space-y-2 rounded-lg border border-border px-3 py-3">
+              <Label>Empresas que este cliente pode ver</Label>
+              <p className="text-xs text-muted-foreground">
+                O cliente entra em uma tela própria e vê apenas as tarefas e ações destas empresas.
+              </p>
+              <div className="space-y-1.5">
+                {ws.companies.map((c) => (
+                  <label key={c.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-[var(--color-primary)]"
+                      checked={companyIds.includes(c.id)}
+                      onChange={() => toggleCompany(c.id)}
+                    />
+                    <span className="size-2 rounded-full" style={{ backgroundColor: c.color }} />
+                    {c.name}
+                  </label>
+                ))}
+                {ws.companies.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Cadastre uma empresa primeiro.</p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
             <Label htmlFor="u-active">Usuário ativo</Label>
             <Switch id="u-active" checked={active} onCheckedChange={setActive} />
