@@ -192,7 +192,7 @@ function PortalPage() {
           ) : aba === "tarefas" ? (
             <TasksView ctx={ctx} />
           ) : (
-            <ActionsView ctx={ctx} dia={dia ?? undefined} />
+            <ActionsView ctx={ctx} dia={dia} />
           )
         ) : null}
       </main>
@@ -408,7 +408,7 @@ function TasksView({ ctx }: { ctx: Ctx }) {
   );
 }
 
-function ActionsView({ ctx, dia }: { ctx: Ctx; dia?: string }) {
+function ActionsView({ ctx, dia }: { ctx: Ctx; dia: string | undefined }) {
   const { today, go } = ctx;
   const all = ctx.data.actions;
   const filtered = dia ? all.filter((a) => a.action_date === dia) : all;
