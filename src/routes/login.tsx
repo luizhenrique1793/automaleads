@@ -105,7 +105,7 @@ function LoginPage() {
         </form>
 
         <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          Acesso inicial: admin@automa.com / automa123 — altere a senha em Usuários.
+          Seu acesso é criado pelo administrador da equipe.
         </p>
       </div>
     </main>

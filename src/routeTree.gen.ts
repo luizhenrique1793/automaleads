@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShellRouteImport } from './routes/_shell'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ShellIndexRouteImport } from './routes/_shell/index'
+import { Route as ShellAjudaRouteImport } from './routes/_shell/ajuda'
 import { Route as ShellCalendarioRouteImport } from './routes/_shell/calendario'
+import { Route as ShellContaRouteImport } from './routes/_shell/conta'
 import { Route as ShellSemanaRouteImport } from './routes/_shell/semana'
 import { Route as ShellTarefasRouteImport } from './routes/_shell/tarefas'
 import { Route as ShellUsuariosRouteImport } from './routes/_shell/usuarios'
@@ -37,9 +39,19 @@ const ShellIndexRoute = ShellIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellAjudaRoute = ShellAjudaRouteImport.update({
+  id: '/ajuda',
+  path: '/ajuda',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellCalendarioRoute = ShellCalendarioRouteImport.update({
   id: '/calendario',
   path: '/calendario',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellContaRoute = ShellContaRouteImport.update({
+  id: '/conta',
+  path: '/conta',
   getParentRoute: () => ShellRoute,
 } as any)
 const ShellSemanaRoute = ShellSemanaRouteImport.update({
@@ -91,7 +103,9 @@ const ShellProjetosProjectIdRoute = ShellProjetosProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof ShellIndexRoute
   '/login': typeof LoginRoute
+  '/ajuda': typeof ShellAjudaRoute
   '/calendario': typeof ShellCalendarioRoute
+  '/conta': typeof ShellContaRoute
   '/semana': typeof ShellSemanaRoute
   '/tarefas': typeof ShellTarefasRoute
   '/usuarios': typeof ShellUsuariosRoute
@@ -104,7 +118,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/ajuda': typeof ShellAjudaRoute
   '/calendario': typeof ShellCalendarioRoute
+  '/conta': typeof ShellContaRoute
   '/semana': typeof ShellSemanaRoute
   '/tarefas': typeof ShellTarefasRoute
   '/usuarios': typeof ShellUsuariosRoute
@@ -120,7 +136,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_shell': typeof ShellRouteWithChildren
   '/login': typeof LoginRoute
+  '/_shell/ajuda': typeof ShellAjudaRoute
   '/_shell/calendario': typeof ShellCalendarioRoute
+  '/_shell/conta': typeof ShellContaRoute
   '/_shell/semana': typeof ShellSemanaRoute
   '/_shell/tarefas': typeof ShellTarefasRoute
   '/_shell/usuarios': typeof ShellUsuariosRoute
@@ -137,7 +155,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/ajuda'
     | '/calendario'
+    | '/conta'
     | '/semana'
     | '/tarefas'
     | '/usuarios'
@@ -150,7 +170,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/ajuda'
     | '/calendario'
+    | '/conta'
     | '/semana'
     | '/tarefas'
     | '/usuarios'
@@ -165,7 +187,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_shell'
     | '/login'
+    | '/_shell/ajuda'
     | '/_shell/calendario'
+    | '/_shell/conta'
     | '/_shell/semana'
     | '/_shell/tarefas'
     | '/_shell/usuarios'
@@ -206,11 +230,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellIndexRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/ajuda': {
+      id: '/_shell/ajuda'
+      path: '/ajuda'
+      fullPath: '/ajuda'
+      preLoaderRoute: typeof ShellAjudaRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/calendario': {
       id: '/_shell/calendario'
       path: '/calendario'
       fullPath: '/calendario'
       preLoaderRoute: typeof ShellCalendarioRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/conta': {
+      id: '/_shell/conta'
+      path: '/conta'
+      fullPath: '/conta'
+      preLoaderRoute: typeof ShellContaRouteImport
       parentRoute: typeof ShellRoute
     }
     '/_shell/semana': {
@@ -280,7 +318,9 @@ declare module '@tanstack/react-router' {
 }
 
 interface ShellRouteChildren {
+  ShellAjudaRoute: typeof ShellAjudaRoute
   ShellCalendarioRoute: typeof ShellCalendarioRoute
+  ShellContaRoute: typeof ShellContaRoute
   ShellSemanaRoute: typeof ShellSemanaRoute
   ShellTarefasRoute: typeof ShellTarefasRoute
   ShellUsuariosRoute: typeof ShellUsuariosRoute
@@ -294,7 +334,9 @@ interface ShellRouteChildren {
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
+  ShellAjudaRoute: ShellAjudaRoute,
   ShellCalendarioRoute: ShellCalendarioRoute,
+  ShellContaRoute: ShellContaRoute,
   ShellSemanaRoute: ShellSemanaRoute,
   ShellTarefasRoute: ShellTarefasRoute,
   ShellUsuariosRoute: ShellUsuariosRoute,

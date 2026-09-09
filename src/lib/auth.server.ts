@@ -78,7 +78,8 @@ export async function getSessionUser(): Promise<User | null> {
   if (!userId) return null;
   const sql = await db();
   const rows = await sql<User[]>`
-    SELECT id, name, email, global_role, active FROM users WHERE id = ${userId} AND active = true
+    SELECT id, name, email, global_role, active, must_change_password, onboarding_done
+    FROM users WHERE id = ${userId} AND active = true
   `;
   return rows[0] ?? null;
 }

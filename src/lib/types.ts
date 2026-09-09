@@ -30,6 +30,12 @@ export interface User {
   email: string;
   global_role: string;
   active: boolean;
+  must_change_password?: boolean;
+  onboarding_done?: boolean;
+}
+
+export function isAdmin(user: { global_role: string } | null | undefined): boolean {
+  return user?.global_role === "administrador";
 }
 
 export interface Company {
@@ -42,6 +48,7 @@ export interface Company {
   email: string | null;
   notes: string | null;
   status: CompanyStatus;
+  is_demo?: boolean;
 }
 
 export interface Project {
