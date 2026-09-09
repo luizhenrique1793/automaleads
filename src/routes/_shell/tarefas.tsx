@@ -54,7 +54,7 @@ function TasksPage() {
   const { data } = useWorkspace();
   const { openTask } = useForms();
   const today = todayISO();
-  const [quick, setQuick] = useState<(typeof QUICK)[number]>("todas");
+  const [quick, setQuick] = useState<(typeof QUICK)[number]>("minhas");
   const [filters, setFilters] = useState(emptyFilters);
   const [search, setSearch] = useState("");
 
