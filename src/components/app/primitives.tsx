@@ -117,7 +117,7 @@ export function PageHeader({
   );
 }
 
-export function EmptyState({ title, description }: { title: string; description?: string }) {
+export function EmptyState({ title, description }: { title: string; description?: string | undefined }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-10 text-center">
       <p className="text-sm font-semibold text-foreground">{title}</p>

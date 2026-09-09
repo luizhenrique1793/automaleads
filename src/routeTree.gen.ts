@@ -15,8 +15,13 @@ import { Route as ShellIndexRouteImport } from './routes/_shell/index'
 import { Route as ShellCalendarioRouteImport } from './routes/_shell/calendario'
 import { Route as ShellSemanaRouteImport } from './routes/_shell/semana'
 import { Route as ShellTarefasRouteImport } from './routes/_shell/tarefas'
+import { Route as ShellUsuariosRouteImport } from './routes/_shell/usuarios'
+import { Route as ShellAcoesIndexRouteImport } from './routes/_shell/acoes.index'
+import { Route as ShellAcoesActionIdRouteImport } from './routes/_shell/acoes.$actionId'
 import { Route as ShellEmpresasIndexRouteImport } from './routes/_shell/empresas.index'
 import { Route as ShellEmpresasCompanyIdRouteImport } from './routes/_shell/empresas.$companyId'
+import { Route as ShellProjetosIndexRouteImport } from './routes/_shell/projetos.index'
+import { Route as ShellProjetosProjectIdRouteImport } from './routes/_shell/projetos.$projectId'
 
 const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
@@ -47,6 +52,21 @@ const ShellTarefasRoute = ShellTarefasRouteImport.update({
   path: '/tarefas',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellUsuariosRoute = ShellUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAcoesIndexRoute = ShellAcoesIndexRouteImport.update({
+  id: '/acoes/',
+  path: '/acoes/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellAcoesActionIdRoute = ShellAcoesActionIdRouteImport.update({
+  id: '/acoes/$actionId',
+  path: '/acoes/$actionId',
+  getParentRoute: () => ShellRoute,
+} as any)
 const ShellEmpresasIndexRoute = ShellEmpresasIndexRouteImport.update({
   id: '/empresas/',
   path: '/empresas/',
@@ -57,6 +77,16 @@ const ShellEmpresasCompanyIdRoute = ShellEmpresasCompanyIdRouteImport.update({
   path: '/empresas/$companyId',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellProjetosIndexRoute = ShellProjetosIndexRouteImport.update({
+  id: '/projetos/',
+  path: '/projetos/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellProjetosProjectIdRoute = ShellProjetosProjectIdRouteImport.update({
+  id: '/projetos/$projectId',
+  path: '/projetos/$projectId',
+  getParentRoute: () => ShellRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ShellIndexRoute
@@ -64,17 +94,27 @@ export interface FileRoutesByFullPath {
   '/calendario': typeof ShellCalendarioRoute
   '/semana': typeof ShellSemanaRoute
   '/tarefas': typeof ShellTarefasRoute
+  '/usuarios': typeof ShellUsuariosRoute
+  '/acoes/$actionId': typeof ShellAcoesActionIdRoute
   '/empresas/$companyId': typeof ShellEmpresasCompanyIdRoute
+  '/projetos/$projectId': typeof ShellProjetosProjectIdRoute
+  '/acoes/': typeof ShellAcoesIndexRoute
   '/empresas/': typeof ShellEmpresasIndexRoute
+  '/projetos/': typeof ShellProjetosIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/calendario': typeof ShellCalendarioRoute
   '/semana': typeof ShellSemanaRoute
   '/tarefas': typeof ShellTarefasRoute
+  '/usuarios': typeof ShellUsuariosRoute
   '/': typeof ShellIndexRoute
+  '/acoes/$actionId': typeof ShellAcoesActionIdRoute
   '/empresas/$companyId': typeof ShellEmpresasCompanyIdRoute
+  '/projetos/$projectId': typeof ShellProjetosProjectIdRoute
+  '/acoes': typeof ShellAcoesIndexRoute
   '/empresas': typeof ShellEmpresasIndexRoute
+  '/projetos': typeof ShellProjetosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -83,9 +123,14 @@ export interface FileRoutesById {
   '/_shell/calendario': typeof ShellCalendarioRoute
   '/_shell/semana': typeof ShellSemanaRoute
   '/_shell/tarefas': typeof ShellTarefasRoute
+  '/_shell/usuarios': typeof ShellUsuariosRoute
   '/_shell/': typeof ShellIndexRoute
+  '/_shell/acoes/$actionId': typeof ShellAcoesActionIdRoute
   '/_shell/empresas/$companyId': typeof ShellEmpresasCompanyIdRoute
+  '/_shell/projetos/$projectId': typeof ShellProjetosProjectIdRoute
+  '/_shell/acoes/': typeof ShellAcoesIndexRoute
   '/_shell/empresas/': typeof ShellEmpresasIndexRoute
+  '/_shell/projetos/': typeof ShellProjetosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -95,17 +140,27 @@ export interface FileRouteTypes {
     | '/calendario'
     | '/semana'
     | '/tarefas'
+    | '/usuarios'
+    | '/acoes/$actionId'
     | '/empresas/$companyId'
+    | '/projetos/$projectId'
+    | '/acoes/'
     | '/empresas/'
+    | '/projetos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/calendario'
     | '/semana'
     | '/tarefas'
+    | '/usuarios'
     | '/'
+    | '/acoes/$actionId'
     | '/empresas/$companyId'
+    | '/projetos/$projectId'
+    | '/acoes'
     | '/empresas'
+    | '/projetos'
   id:
     | '__root__'
     | '/_shell'
@@ -113,9 +168,14 @@ export interface FileRouteTypes {
     | '/_shell/calendario'
     | '/_shell/semana'
     | '/_shell/tarefas'
+    | '/_shell/usuarios'
     | '/_shell/'
+    | '/_shell/acoes/$actionId'
     | '/_shell/empresas/$companyId'
+    | '/_shell/projetos/$projectId'
+    | '/_shell/acoes/'
     | '/_shell/empresas/'
+    | '/_shell/projetos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,6 +227,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellTarefasRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/usuarios': {
+      id: '/_shell/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof ShellUsuariosRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/acoes/': {
+      id: '/_shell/acoes/'
+      path: '/acoes'
+      fullPath: '/acoes/'
+      preLoaderRoute: typeof ShellAcoesIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/acoes/$actionId': {
+      id: '/_shell/acoes/$actionId'
+      path: '/acoes/$actionId'
+      fullPath: '/acoes/$actionId'
+      preLoaderRoute: typeof ShellAcoesActionIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
     '/_shell/empresas/': {
       id: '/_shell/empresas/'
       path: '/empresas'
@@ -181,6 +262,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellEmpresasCompanyIdRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/projetos/': {
+      id: '/_shell/projetos/'
+      path: '/projetos'
+      fullPath: '/projetos/'
+      preLoaderRoute: typeof ShellProjetosIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/projetos/$projectId': {
+      id: '/_shell/projetos/$projectId'
+      path: '/projetos/$projectId'
+      fullPath: '/projetos/$projectId'
+      preLoaderRoute: typeof ShellProjetosProjectIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
   }
 }
 
@@ -188,18 +283,28 @@ interface ShellRouteChildren {
   ShellCalendarioRoute: typeof ShellCalendarioRoute
   ShellSemanaRoute: typeof ShellSemanaRoute
   ShellTarefasRoute: typeof ShellTarefasRoute
+  ShellUsuariosRoute: typeof ShellUsuariosRoute
   ShellIndexRoute: typeof ShellIndexRoute
+  ShellAcoesActionIdRoute: typeof ShellAcoesActionIdRoute
   ShellEmpresasCompanyIdRoute: typeof ShellEmpresasCompanyIdRoute
+  ShellProjetosProjectIdRoute: typeof ShellProjetosProjectIdRoute
+  ShellAcoesIndexRoute: typeof ShellAcoesIndexRoute
   ShellEmpresasIndexRoute: typeof ShellEmpresasIndexRoute
+  ShellProjetosIndexRoute: typeof ShellProjetosIndexRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
   ShellCalendarioRoute: ShellCalendarioRoute,
   ShellSemanaRoute: ShellSemanaRoute,
   ShellTarefasRoute: ShellTarefasRoute,
+  ShellUsuariosRoute: ShellUsuariosRoute,
   ShellIndexRoute: ShellIndexRoute,
+  ShellAcoesActionIdRoute: ShellAcoesActionIdRoute,
   ShellEmpresasCompanyIdRoute: ShellEmpresasCompanyIdRoute,
+  ShellProjetosProjectIdRoute: ShellProjetosProjectIdRoute,
+  ShellAcoesIndexRoute: ShellAcoesIndexRoute,
   ShellEmpresasIndexRoute: ShellEmpresasIndexRoute,
+  ShellProjetosIndexRoute: ShellProjetosIndexRoute,
 }
 
 const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)

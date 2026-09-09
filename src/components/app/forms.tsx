@@ -138,10 +138,10 @@ function SheetShell({
   children,
 }: {
   title: string;
-  description?: string;
+  description?: string | undefined;
   onClose: () => void;
   onSubmit: () => void;
-  onDelete?: () => void;
+  onDelete?: (() => void) | undefined;
   saving: boolean;
   children: ReactNode;
 }) {
@@ -225,8 +225,8 @@ function TaskSheet({
   const actions = data.actions.filter((a) => a.company_id === form.company_id);
 
   async function submit() {
-    if (!form.title.trim()) return toast.error("Informe o título da tarefa.");
-    if (!form.company_id) return toast.error("Selecione a empresa.");
+    if (!form.title.trim()) { toast.error("Informe o título da tarefa."); return; }
+    if (!form.company_id) { toast.error("Selecione a empresa."); return; }
     setSaving(true);
     try {
       await save({
@@ -280,7 +280,7 @@ function TaskSheet({
       </Field>
       <Field label="Empresa">
         <Select
-          value={form.company_id || undefined}
+          value={form.company_id}
           onValueChange={(v) => setForm({ ...form, company_id: v, project_id: "", action_id: "" })}
         >
           <SelectTrigger>
@@ -362,7 +362,7 @@ function TaskSheet({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Prioridade">
-          <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
+          <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v as typeof form.priority })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -376,7 +376,7 @@ function TaskSheet({
           </Select>
         </Field>
         <Field label="Status">
-          <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+          <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as typeof form.status })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -438,9 +438,9 @@ function ActionSheet({
   const projects = data.projects.filter((p) => p.company_id === form.company_id);
 
   async function submit() {
-    if (!form.title.trim()) return toast.error("Informe o título da ação.");
-    if (!form.company_id) return toast.error("Selecione a empresa.");
-    if (!form.all_day && !form.start_time) return toast.error("Informe o horário inicial.");
+    if (!form.title.trim()) { toast.error("Informe o título da ação."); return; }
+    if (!form.company_id) { toast.error("Selecione a empresa."); return; }
+    if (!form.all_day && !form.start_time) { toast.error("Informe o horário inicial."); return; }
     setSaving(true);
     try {
       await save({
@@ -497,7 +497,7 @@ function ActionSheet({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Empresa">
           <Select
-            value={form.company_id || undefined}
+            value={form.company_id}
             onValueChange={(v) => setForm({ ...form, company_id: v, project_id: "" })}
           >
             <SelectTrigger>
@@ -535,7 +535,7 @@ function ActionSheet({
         <Field label="Tipo">
           <Select
             value={form.action_type}
-            onValueChange={(v) => setForm({ ...form, action_type: v })}
+            onValueChange={(v) => setForm({ ...form, action_type: v as typeof form.action_type })}
           >
             <SelectTrigger>
               <SelectValue />
@@ -601,7 +601,7 @@ function ActionSheet({
         </div>
       ) : null}
       <Field label="Status">
-        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as typeof form.status })}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -656,8 +656,8 @@ function ProjectSheet({
   }));
 
   async function submit() {
-    if (!form.name.trim()) return toast.error("Informe o nome do projeto.");
-    if (!form.company_id) return toast.error("Selecione a empresa.");
+    if (!form.name.trim()) { toast.error("Informe o nome do projeto."); return; }
+    if (!form.company_id) { toast.error("Selecione a empresa."); return; }
     setSaving(true);
     try {
       await save({
@@ -710,7 +710,7 @@ function ProjectSheet({
       </Field>
       <Field label="Empresa">
         <Select
-          value={form.company_id || undefined}
+          value={form.company_id}
           onValueChange={(v) => setForm({ ...form, company_id: v })}
         >
           <SelectTrigger>
@@ -761,7 +761,7 @@ function ProjectSheet({
           </Select>
         </Field>
         <Field label="Status">
-          <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+          <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as typeof form.status })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -829,7 +829,7 @@ function CompanySheet({ company, onClose }: { company: Company | null; onClose: 
   }));
 
   async function submit() {
-    if (!form.name.trim()) return toast.error("Informe o nome da empresa.");
+    if (!form.name.trim()) { toast.error("Informe o nome da empresa."); return; }
     setSaving(true);
     try {
       await save({ data: { id: company?.id ?? null, ...form } });
@@ -914,7 +914,7 @@ function CompanySheet({ company, onClose }: { company: Company | null; onClose: 
         />
       </Field>
       <Field label="Status">
-        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as typeof form.status })}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
