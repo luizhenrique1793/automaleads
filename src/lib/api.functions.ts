@@ -108,7 +108,7 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
                        to_char(start_date,'YYYY-MM-DD') AS start_date,
                        to_char(deadline,'YYYY-MM-DD') AS deadline,
                        status, progress
-                     FROM projects ORDER BY created_at DESC`,
+                      FROM projects ${filter} ORDER BY created_at DESC`,
       sql<Action[]>`SELECT id, company_id, project_id, title, description, action_type,
                       responsible_user_id,
                       to_char(action_date,'YYYY-MM-DD') AS action_date,
@@ -116,17 +116,17 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
                       to_char(start_time,'HH24:MI') AS start_time,
                       to_char(end_time,'HH24:MI') AS end_time,
                       status
-                    FROM actions ORDER BY action_date, start_time NULLS FIRST`,
+                    FROM actions ${filter} ORDER BY action_date, start_time NULLS FIRST`,
       sql<Task[]>`SELECT id, company_id, project_id, action_id, title, description,
                     responsible_user_id,
                     to_char(due_date,'YYYY-MM-DD') AS due_date,
                     priority, status,
                     to_char(completed_at,'YYYY-MM-DD"T"HH24:MI:SS') AS completed_at,
                     to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS') AS created_at
-                  FROM tasks ORDER BY due_date NULLS LAST, created_at DESC`,
+                  FROM tasks ${filter} ORDER BY due_date NULLS LAST, created_at DESC`,
       sql<ActivityLog[]>`SELECT id, user_id, company_id, entity_type, entity_id, action, detail,
                            to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS') AS created_at
-                         FROM activity_logs ORDER BY created_at DESC LIMIT 40`,
+                         FROM activity_logs ${filter} ORDER BY created_at DESC LIMIT 40`,
       sql<CompanyUser[]>`SELECT company_id, user_id, role FROM company_users`,
     ]);
 
