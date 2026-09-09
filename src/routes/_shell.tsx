@@ -19,17 +19,28 @@ import {
   Plus,
   Menu,
   LogOut,
+  HelpCircle,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getMe, logout } from "@/lib/api.functions";
+import { completeOnboarding, getMe, logout } from "@/lib/api.functions";
 import { FormsProvider, useForms } from "@/components/app/forms";
+import { isAdmin } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_shell")({
