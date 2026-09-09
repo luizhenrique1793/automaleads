@@ -1,12 +1,15 @@
+import { getRequest } from "@tanstack/react-start/server";
 import postgres from "postgres";
 
 type Sql = ReturnType<typeof postgres>;
 
-let client: Sql | null = null;
-let ready: Promise<void> | null = null;
+// Connections (sockets) cannot be shared between requests on the edge runtime,
+// so each incoming request gets its own client, cached for that request only.
+const perRequest = new WeakMap<object, Sql>();
+let fallback: Sql | null = null;
+let schemaReady = false;
 
-export function getSql(): Sql {
-  if (client) return client;
+function createClient(): Sql {
   const url = process.env["DATABASE_URL"];
   if (!url) {
     throw new Error(
@@ -14,26 +17,41 @@ export function getSql(): Sql {
     );
   }
   const needsSsl = /sslmode=(require|verify-ca|verify-full|prefer)/.test(url);
-  client = postgres(url, {
-    max: 3,
+  return postgres(url, {
+    max: 1,
     idle_timeout: 20,
     connect_timeout: 15,
     prepare: false,
     ...(needsSsl ? { ssl: { rejectUnauthorized: false } } : {}),
   });
-  return client;
+}
+
+export function getSql(): Sql {
+  let key: object | null = null;
+  try {
+    key = getRequest() as unknown as object;
+  } catch {
+    key = null;
+  }
+  if (!key) {
+    if (!fallback) fallback = createClient();
+    return fallback;
+  }
+  let sql = perRequest.get(key);
+  if (!sql) {
+    sql = createClient();
+    perRequest.set(key, sql);
+  }
+  return sql;
 }
 
 /** Returns a ready-to-use connection, guaranteeing the schema exists. */
 export async function db(): Promise<Sql> {
   const sql = getSql();
-  if (!ready) {
-    ready = ensureSchema(sql).catch((err) => {
-      ready = null;
-      throw err;
-    });
+  if (!schemaReady) {
+    await ensureSchema(sql);
+    schemaReady = true;
   }
-  await ready;
   return sql;
 }
 
