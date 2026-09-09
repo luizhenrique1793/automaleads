@@ -17,6 +17,8 @@ import { Route as ShellSemanaRouteImport } from './routes/_shell/semana'
 import { Route as ShellTarefasRouteImport } from './routes/_shell/tarefas'
 import { Route as ShellEmpresasIndexRouteImport } from './routes/_shell/empresas.index'
 import { Route as ShellEmpresasCompanyIdRouteImport } from './routes/_shell/empresas.$companyId'
+import { Route as ShellProjetosIndexRouteImport } from './routes/_shell/projetos.index'
+import { Route as ShellProjetosProjectIdRouteImport } from './routes/_shell/projetos.$projectId'
 
 const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
@@ -57,6 +59,16 @@ const ShellEmpresasCompanyIdRoute = ShellEmpresasCompanyIdRouteImport.update({
   path: '/empresas/$companyId',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellProjetosIndexRoute = ShellProjetosIndexRouteImport.update({
+  id: '/projetos/',
+  path: '/projetos/',
+  getParentRoute: () => ShellRoute,
+} as any)
+const ShellProjetosProjectIdRoute = ShellProjetosProjectIdRouteImport.update({
+  id: '/projetos/$projectId',
+  path: '/projetos/$projectId',
+  getParentRoute: () => ShellRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ShellIndexRoute
@@ -65,7 +77,9 @@ export interface FileRoutesByFullPath {
   '/semana': typeof ShellSemanaRoute
   '/tarefas': typeof ShellTarefasRoute
   '/empresas/$companyId': typeof ShellEmpresasCompanyIdRoute
+  '/projetos/$projectId': typeof ShellProjetosProjectIdRoute
   '/empresas/': typeof ShellEmpresasIndexRoute
+  '/projetos/': typeof ShellProjetosIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -74,7 +88,9 @@ export interface FileRoutesByTo {
   '/tarefas': typeof ShellTarefasRoute
   '/': typeof ShellIndexRoute
   '/empresas/$companyId': typeof ShellEmpresasCompanyIdRoute
+  '/projetos/$projectId': typeof ShellProjetosProjectIdRoute
   '/empresas': typeof ShellEmpresasIndexRoute
+  '/projetos': typeof ShellProjetosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,7 +101,9 @@ export interface FileRoutesById {
   '/_shell/tarefas': typeof ShellTarefasRoute
   '/_shell/': typeof ShellIndexRoute
   '/_shell/empresas/$companyId': typeof ShellEmpresasCompanyIdRoute
+  '/_shell/projetos/$projectId': typeof ShellProjetosProjectIdRoute
   '/_shell/empresas/': typeof ShellEmpresasIndexRoute
+  '/_shell/projetos/': typeof ShellProjetosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,7 +114,9 @@ export interface FileRouteTypes {
     | '/semana'
     | '/tarefas'
     | '/empresas/$companyId'
+    | '/projetos/$projectId'
     | '/empresas/'
+    | '/projetos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -105,7 +125,9 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/'
     | '/empresas/$companyId'
+    | '/projetos/$projectId'
     | '/empresas'
+    | '/projetos'
   id:
     | '__root__'
     | '/_shell'
@@ -115,7 +137,9 @@ export interface FileRouteTypes {
     | '/_shell/tarefas'
     | '/_shell/'
     | '/_shell/empresas/$companyId'
+    | '/_shell/projetos/$projectId'
     | '/_shell/empresas/'
+    | '/_shell/projetos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -181,6 +205,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellEmpresasCompanyIdRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/projetos/': {
+      id: '/_shell/projetos/'
+      path: '/projetos'
+      fullPath: '/projetos/'
+      preLoaderRoute: typeof ShellProjetosIndexRouteImport
+      parentRoute: typeof ShellRoute
+    }
+    '/_shell/projetos/$projectId': {
+      id: '/_shell/projetos/$projectId'
+      path: '/projetos/$projectId'
+      fullPath: '/projetos/$projectId'
+      preLoaderRoute: typeof ShellProjetosProjectIdRouteImport
+      parentRoute: typeof ShellRoute
+    }
   }
 }
 
@@ -190,7 +228,9 @@ interface ShellRouteChildren {
   ShellTarefasRoute: typeof ShellTarefasRoute
   ShellIndexRoute: typeof ShellIndexRoute
   ShellEmpresasCompanyIdRoute: typeof ShellEmpresasCompanyIdRoute
+  ShellProjetosProjectIdRoute: typeof ShellProjetosProjectIdRoute
   ShellEmpresasIndexRoute: typeof ShellEmpresasIndexRoute
+  ShellProjetosIndexRoute: typeof ShellProjetosIndexRoute
 }
 
 const ShellRouteChildren: ShellRouteChildren = {
@@ -199,7 +239,9 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellTarefasRoute: ShellTarefasRoute,
   ShellIndexRoute: ShellIndexRoute,
   ShellEmpresasCompanyIdRoute: ShellEmpresasCompanyIdRoute,
+  ShellProjetosProjectIdRoute: ShellProjetosProjectIdRoute,
   ShellEmpresasIndexRoute: ShellEmpresasIndexRoute,
+  ShellProjetosIndexRoute: ShellProjetosIndexRoute,
 }
 
 const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
