@@ -2,7 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import type {
   Action,
   ActivityLog,
+  ClientPortal,
   Company,
+  CompanyUser,
   Project,
   Task,
   User,
@@ -91,9 +93,63 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
       sql<ActivityLog[]>`SELECT id, user_id, company_id, entity_type, entity_id, action, detail,
                            to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS') AS created_at
                          FROM activity_logs ORDER BY created_at DESC LIMIT 40`,
+      sql<CompanyUser[]>`SELECT company_id, user_id, role FROM company_users`,
     ]);
 
-    return { users, companies, projects, actions, tasks, logs };
+    return { users, companies, projects, actions, tasks, logs, companyUsers };
+  },
+);
+
+/* ------------------------------------------------------------------ */
+/* Portal do cliente                                                   */
+/* ------------------------------------------------------------------ */
+
+export const getClientPortal = createServerFn({ method: "GET" }).handler(
+  async (): Promise<ClientPortal> => {
+    const { requireUser } = await import("./auth.server");
+    const { db } = await import("./db.server");
+    const user = await requireUser();
+    const sql = await db();
+
+    const companies = await sql<Company[]>`
+      SELECT c.id, c.name, c.logo_url, c.color, c.contact_name, c.phone, c.email, c.notes,
+             c.status, c.is_demo
+      FROM companies c
+      JOIN company_users cu ON cu.company_id = c.id
+      WHERE cu.user_id = ${user.id}
+      ORDER BY c.name`;
+
+    const ids = companies.map((c) => c.id);
+    if (ids.length === 0) {
+      return { companies, projects: [], actions: [], tasks: [] };
+    }
+
+    const [projects, actions, tasks] = await Promise.all([
+      sql<Project[]>`SELECT id, company_id, name, description, responsible_user_id,
+                       to_char(start_date,'YYYY-MM-DD') AS start_date,
+                       to_char(deadline,'YYYY-MM-DD') AS deadline,
+                       status, progress
+                     FROM projects WHERE company_id = ANY(${ids}) ORDER BY name`,
+      sql<Action[]>`SELECT id, company_id, project_id, title, description, action_type,
+                      responsible_user_id,
+                      to_char(action_date,'YYYY-MM-DD') AS action_date,
+                      all_day,
+                      to_char(start_time,'HH24:MI') AS start_time,
+                      to_char(end_time,'HH24:MI') AS end_time,
+                      status
+                    FROM actions WHERE company_id = ANY(${ids})
+                    ORDER BY action_date DESC, start_time NULLS FIRST`,
+      sql<Task[]>`SELECT id, company_id, project_id, action_id, title, description,
+                    responsible_user_id,
+                    to_char(due_date,'YYYY-MM-DD') AS due_date,
+                    priority, status,
+                    to_char(completed_at,'YYYY-MM-DD"T"HH24:MI:SS') AS completed_at,
+                    to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS') AS created_at
+                  FROM tasks WHERE company_id = ANY(${ids})
+                  ORDER BY due_date NULLS LAST, created_at DESC`,
+    ]);
+
+    return { companies, projects, actions, tasks };
   },
 );
 
