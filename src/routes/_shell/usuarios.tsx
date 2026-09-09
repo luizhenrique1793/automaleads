@@ -172,6 +172,7 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
     user ? ws.companyUsers.filter((cu) => cu.user_id === user.id).map((cu) => cu.company_id) : [],
   );
   const isClientRole = role === "cliente";
+  const showCompanyPicker = role !== "administrador";
 
   function toggleCompany(id: string) {
     setCompanyIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
