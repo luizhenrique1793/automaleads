@@ -59,10 +59,11 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
   async (): Promise<Workspace> => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
-    await requireUser();
+    const me = await requireUser();
+    if (me.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
 
-    const [users, companies, projects, actions, tasks, logs] = await Promise.all([
+    const [users, companies, projects, actions, tasks, logs, companyUsers] = await Promise.all([
       sql<User[]>`SELECT id, name, email, global_role, active FROM users ORDER BY name`,
       sql<Company[]>`SELECT id, name, logo_url, color, contact_name, phone, email, notes, status,
                        is_demo
