@@ -64,7 +64,8 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
 
     const [users, companies, projects, actions, tasks, logs] = await Promise.all([
       sql<User[]>`SELECT id, name, email, global_role, active FROM users ORDER BY name`,
-      sql<Company[]>`SELECT id, name, logo_url, color, contact_name, phone, email, notes, status
+      sql<Company[]>`SELECT id, name, logo_url, color, contact_name, phone, email, notes, status,
+                       is_demo
                      FROM companies ORDER BY name`,
       sql<Project[]>`SELECT id, company_id, name, description, responsible_user_id,
                        to_char(start_date,'YYYY-MM-DD') AS start_date,

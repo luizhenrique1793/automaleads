@@ -48,6 +48,7 @@ export interface Company {
   email: string | null;
   notes: string | null;
   status: CompanyStatus;
+  is_demo?: boolean;
 }
 
 export interface Project {
