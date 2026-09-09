@@ -11,8 +11,8 @@ export const DEFAULT_ADMIN_PASSWORD = "automa123";
 export async function ensureSeed() {
   const sql = await db();
 
-  const [{ count }] = await sql<{ count: string }[]>`SELECT count(*)::text AS count FROM users`;
-  if (Number(count) > 0) return;
+  const rows = await sql<{ count: string }[]>`SELECT count(*)::text AS count FROM users`;
+  if (Number(rows[0]?.count ?? 0) > 0) return;
 
   const adminHash = await hashPassword(DEFAULT_ADMIN_PASSWORD);
   const memberHash = await hashPassword("automa123");
