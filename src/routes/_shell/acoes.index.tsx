@@ -9,7 +9,7 @@ import {
   EmptyState,
   PageHeader,
 } from "@/components/app/primitives";
-import { FilterBar, ALL, emptyFilters, matchFilters } from "@/components/app/Filters";
+import { FilterBar, emptyFilters, matchFilters } from "@/components/app/Filters";
 import { useForms } from "@/components/app/forms";
 import { useWorkspace } from "@/lib/workspace";
 import { formatDate, timeRange, todayISO } from "@/lib/format";
@@ -131,7 +131,6 @@ function ActionsPage() {
       <p className="mt-4 text-xs text-muted-foreground">
         Tipos disponíveis: {Object.values(ACTION_TYPE_LABEL).join(", ")}.
       </p>
-      {filters.company !== ALL ? null : null}
     </>
   );
 }
