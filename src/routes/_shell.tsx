@@ -33,29 +33,34 @@ import { FormsProvider, useForms } from "@/components/app/forms";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_shell")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const res = await getMe();
     if (!res.user) throw redirect({ to: "/login" });
+    if (res.user.must_change_password && location.pathname !== "/conta") {
+      throw redirect({ to: "/conta" });
+    }
     return { user: res.user };
   },
   component: ShellLayout,
 });
 
 const NAV = [
-  { to: "/", label: "Início", icon: LayoutDashboard, exact: true },
-  { to: "/semana", label: "Minha semana", icon: CalendarRange, exact: false },
-  { to: "/calendario", label: "Calendário", icon: CalendarDays, exact: false },
-  { to: "/empresas", label: "Empresas", icon: Building2, exact: false },
-  { to: "/projetos", label: "Projetos", icon: FolderKanban, exact: false },
-  { to: "/tarefas", label: "Tarefas", icon: CheckSquare, exact: false },
-  { to: "/acoes", label: "Ações", icon: Sparkles, exact: false },
-  { to: "/usuarios", label: "Usuários", icon: Users, exact: false },
+  { to: "/", label: "Início", icon: LayoutDashboard, exact: true, adminOnly: false },
+  { to: "/semana", label: "Minha semana", icon: CalendarRange, exact: false, adminOnly: false },
+  { to: "/calendario", label: "Calendário", icon: CalendarDays, exact: false, adminOnly: false },
+  { to: "/empresas", label: "Empresas", icon: Building2, exact: false, adminOnly: false },
+  { to: "/projetos", label: "Projetos", icon: FolderKanban, exact: false, adminOnly: false },
+  { to: "/tarefas", label: "Tarefas", icon: CheckSquare, exact: false, adminOnly: false },
+  { to: "/acoes", label: "Ações", icon: Sparkles, exact: false, adminOnly: false },
+  { to: "/usuarios", label: "Usuários", icon: Users, exact: false, adminOnly: true },
+  { to: "/ajuda", label: "Ajuda", icon: HelpCircle, exact: false, adminOnly: false },
+  { to: "/conta", label: "Minha conta", icon: UserCog, exact: false, adminOnly: false },
 ] as const;
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({ onNavigate, admin }: { onNavigate?: () => void; admin: boolean }) {
   return (
     <nav className="space-y-0.5">
-      {NAV.map(({ to, label, icon: Icon, exact }) => (
+      {NAV.filter((i) => admin || !i.adminOnly).map(({ to, label, icon: Icon, exact }) => (
         <Link
           key={to}
           to={to}
