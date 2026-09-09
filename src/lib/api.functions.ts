@@ -495,7 +495,7 @@ export const saveUser = createServerFn({ method: "POST" })
         await sql`UPDATE users SET password_hash = ${hash}, must_change_password = true
                   WHERE id = ${data.id}`;
       }
-      await syncCompanies(sql, data.id, data.company_ids);
+      await syncCompanies(sql, data.id, data.company_ids, data.global_role);
       return { id: data.id };
     }
     if (!data.password) return { id: null, error: "Senha obrigatória." };
@@ -505,22 +505,23 @@ export const saveUser = createServerFn({ method: "POST" })
       VALUES (${data.name.trim()}, ${email}, ${hash}, ${data.global_role}, ${data.active}, true)
       RETURNING id`;
     const id = rows[0]!.id;
-    await syncCompanies(sql, id, data.company_ids);
+    await syncCompanies(sql, id, data.company_ids, data.global_role);
     return { id };
   });
 
-/** Substitui os vínculos de empresa de um usuário (usado pelo acesso de cliente). */
+/** Substitui os vínculos de empresa de um usuário (portal de cliente e escopo da equipe). */
 async function syncCompanies(
   sql: Awaited<ReturnType<typeof import("./db.server").db>>,
   userId: string,
-  companyIds?: string[],
+  companyIds: string[] | undefined,
+  role: string,
 ) {
   if (!companyIds) return;
   await sql`DELETE FROM company_users WHERE user_id = ${userId}`;
   for (const companyId of companyIds) {
     await sql`INSERT INTO company_users (company_id, user_id, role)
-              VALUES (${companyId}, ${userId}, 'cliente')
-              ON CONFLICT (company_id, user_id) DO UPDATE SET role = 'cliente'`;
+              VALUES (${companyId}, ${userId}, ${role})
+              ON CONFLICT (company_id, user_id) DO UPDATE SET role = ${role}`;
   }
 }
 
