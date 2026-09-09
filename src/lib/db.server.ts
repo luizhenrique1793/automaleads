@@ -55,8 +55,17 @@ export async function db(): Promise<Sql> {
   return sql;
 }
 
+const DEMO_COMPANY_NAMES = ["Parque Pôr do Sol", "NP Yachts", "Apoio Contábil"];
+
 async function ensureSchema(sql: Sql) {
   await sql.unsafe(SCHEMA_SQL);
+  // Marca uma única vez as empresas de demonstração já existentes.
+  const marked = await sql<{ key: string }[]>`SELECT key FROM app_meta WHERE key = 'demo_marked'`;
+  if (marked.length === 0) {
+    await sql`UPDATE companies SET is_demo = true WHERE name = ANY(${DEMO_COMPANY_NAMES})`;
+    await sql`INSERT INTO app_meta (key, value) VALUES ('demo_marked', 'true')
+              ON CONFLICT (key) DO NOTHING`;
+  }
 }
 
 const SCHEMA_SQL = `
@@ -162,4 +171,13 @@ CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_action ON tasks(action_id);
 CREATE INDEX IF NOT EXISTS idx_logs_company ON activity_logs(company_id);
+
+CREATE TABLE IF NOT EXISTS app_meta (
+  key text PRIMARY KEY,
+  value text
+);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password boolean NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_done boolean NOT NULL DEFAULT false;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
 `;
