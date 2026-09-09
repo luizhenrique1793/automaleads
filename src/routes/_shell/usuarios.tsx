@@ -200,6 +200,7 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
           password: password.trim() ? password.trim() : null,
           global_role: role,
           active,
+          company_ids: isClientRole ? companyIds : [],
         },
       });
       await invalidate();
@@ -261,6 +262,31 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
               </SelectContent>
             </Select>
           </div>
+          {isClientRole ? (
+            <div className="space-y-2 rounded-lg border border-border px-3 py-3">
+              <Label>Empresas que este cliente pode ver</Label>
+              <p className="text-xs text-muted-foreground">
+                O cliente entra em uma tela própria e vê apenas as tarefas e ações destas empresas.
+              </p>
+              <div className="space-y-1.5">
+                {ws.companies.map((c) => (
+                  <label key={c.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-[var(--color-primary)]"
+                      checked={companyIds.includes(c.id)}
+                      onChange={() => toggleCompany(c.id)}
+                    />
+                    <span className="size-2 rounded-full" style={{ backgroundColor: c.color }} />
+                    {c.name}
+                  </label>
+                ))}
+                {ws.companies.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Cadastre uma empresa primeiro.</p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
             <Label htmlFor="u-active">Usuário ativo</Label>
             <Switch id="u-active" checked={active} onCheckedChange={setActive} />
