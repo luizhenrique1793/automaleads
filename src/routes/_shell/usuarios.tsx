@@ -201,7 +201,7 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
           password: password.trim() ? password.trim() : null,
           global_role: role,
           active,
-          company_ids: isClientRole ? companyIds : [],
+          company_ids: showCompanyPicker ? companyIds : [],
         },
       });
       await invalidate();
@@ -263,11 +263,13 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
               </SelectContent>
             </Select>
           </div>
-          {isClientRole ? (
+          {showCompanyPicker ? (
             <div className="space-y-2 rounded-lg border border-border px-3 py-3">
-              <Label>Empresas que este cliente pode ver</Label>
+              <Label>Empresas que esta pessoa atende</Label>
               <p className="text-xs text-muted-foreground">
-                O cliente entra em uma tela própria e vê apenas as tarefas e ações destas empresas.
+                {isClientRole
+                  ? "O cliente entra em uma tela própria e vê apenas as tarefas e ações destas empresas. É obrigatório marcar pelo menos uma."
+                  : "Se você marcar empresas, a pessoa vê e edita apenas elas. Sem marcar nada, ela continua vendo tudo."}
               </p>
               <div className="space-y-1.5">
                 {ws.companies.map((c) => (
