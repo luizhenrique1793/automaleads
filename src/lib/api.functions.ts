@@ -374,15 +374,92 @@ export const saveUser = createServerFn({ method: "POST" })
                 WHERE id = ${data.id}`;
       if (data.password) {
         const hash = await hashPassword(data.password);
-        await sql`UPDATE users SET password_hash = ${hash} WHERE id = ${data.id}`;
+        await sql`UPDATE users SET password_hash = ${hash}, must_change_password = true
+                  WHERE id = ${data.id}`;
       }
       return { id: data.id };
     }
     if (!data.password) return { id: null, error: "Senha obrigatória." };
     const hash = await hashPassword(data.password);
     const rows = await sql<{ id: string }[]>`
-      INSERT INTO users (name, email, password_hash, global_role, active)
-      VALUES (${data.name.trim()}, ${email}, ${hash}, ${data.global_role}, ${data.active})
+      INSERT INTO users (name, email, password_hash, global_role, active, must_change_password)
+      VALUES (${data.name.trim()}, ${email}, ${hash}, ${data.global_role}, ${data.active}, true)
       RETURNING id`;
     return { id: rows[0]!.id };
   });
+
+/* ------------------------------------------------------------------ */
+/* Minha conta                                                         */
+/* ------------------------------------------------------------------ */
+
+export const updateOwnProfile = createServerFn({ method: "POST" })
+  .inputValidator((d: { name: string }) => d)
+  .handler(async ({ data }) => {
+    const { requireUser } = await import("./auth.server");
+    const { db } = await import("./db.server");
+    const user = await requireUser();
+    const name = data.name.trim();
+    if (name.length < 2) return { ok: false as const, error: "Informe seu nome." };
+    const sql = await db();
+    await sql`UPDATE users SET name = ${name}, updated_at = now() WHERE id = ${user.id}`;
+    return { ok: true as const };
+  });
+
+export const changeOwnPassword = createServerFn({ method: "POST" })
+  .inputValidator((d: { current: string; next: string }) => d)
+  .handler(async ({ data }) => {
+    const { requireUser, verifyPassword, hashPassword } = await import("./auth.server");
+    const { db } = await import("./db.server");
+    const user = await requireUser();
+    if (data.next.trim().length < 6) {
+      return { ok: false as const, error: "A nova senha precisa ter ao menos 6 caracteres." };
+    }
+    const sql = await db();
+    const rows = await sql<{ password_hash: string }[]>`
+      SELECT password_hash FROM users WHERE id = ${user.id}`;
+    const hash = rows[0]?.password_hash;
+    if (!hash || !(await verifyPassword(data.current, hash))) {
+      return { ok: false as const, error: "Senha atual incorreta." };
+    }
+    const next = await hashPassword(data.next.trim());
+    await sql`UPDATE users SET password_hash = ${next}, must_change_password = false,
+                updated_at = now() WHERE id = ${user.id}`;
+    return { ok: true as const };
+  });
+
+export const completeOnboarding = createServerFn({ method: "POST" }).handler(async () => {
+  const { requireUser } = await import("./auth.server");
+  const { db } = await import("./db.server");
+  const user = await requireUser();
+  const sql = await db();
+  await sql`UPDATE users SET onboarding_done = true WHERE id = ${user.id}`;
+  return { ok: true };
+});
+
+/* ------------------------------------------------------------------ */
+/* Dados de demonstração                                               */
+/* ------------------------------------------------------------------ */
+
+export const countDemoData = createServerFn({ method: "GET" }).handler(async () => {
+  const { requireUser } = await import("./auth.server");
+  const { db } = await import("./db.server");
+  await requireUser();
+  const sql = await db();
+  const rows = await sql<{ count: string }[]>`
+    SELECT count(*)::text AS count FROM companies WHERE is_demo = true`;
+  return { companies: Number(rows[0]?.count ?? 0) };
+});
+
+export const clearDemoData = createServerFn({ method: "POST" }).handler(async () => {
+  const { requireUser } = await import("./auth.server");
+  const { db } = await import("./db.server");
+  const user = await requireUser();
+  if (user.global_role !== "administrador") {
+    throw new Error("Apenas administradores podem limpar os dados de exemplo.");
+  }
+  const sql = await db();
+  const rows = await sql<{ id: string }[]>`
+    DELETE FROM companies WHERE is_demo = true RETURNING id`;
+  await sql`DELETE FROM activity_logs WHERE company_id IS NULL AND entity_type = 'sistema'`;
+  return { removed: rows.length };
+});
