@@ -165,9 +165,12 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
                            to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS') AS created_at
                          FROM activity_logs ${filter} ORDER BY created_at DESC LIMIT 40`,
       sql<CompanyUser[]>`SELECT company_id, user_id, role FROM company_users`,
+      sql<ActionSeries[]>`SELECT id, company_id, frequency,
+                            to_char(start_date,'YYYY-MM-DD') AS start_date, occurrences
+                          FROM action_series ${filter} ORDER BY created_at DESC`,
     ]);
 
-    return { users, companies, projects, actions, tasks, logs, companyUsers };
+    return { users, companies, projects, actions, tasks, logs, companyUsers, series };
   },
 );
 
