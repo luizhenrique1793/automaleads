@@ -78,6 +78,7 @@ interface FormsContextValue {
   openAction: (action?: Action | null, prefill?: ActionPrefill) => void;
   openProject: (project?: Project | null, prefill?: ProjectPrefill) => void;
   openCompany: (company?: Company | null) => void;
+  currentUserId: string;
 }
 
 const FormsContext = createContext<FormsContextValue | null>(null);
@@ -88,7 +89,26 @@ export function useForms() {
   return ctx;
 }
 
-export function FormsProvider({ children }: { children: ReactNode }) {
+/** Usuários que podem ser responsáveis: quem compartilha empresa comigo + eu. */
+function useAssignableUsers(currentUserId: string) {
+  const { data } = useWorkspace();
+  const visibleCompanyIds = new Set(data.companies.map((c) => c.id));
+  const linked = new Set(
+    data.companyUsers.filter((cu) => visibleCompanyIds.has(cu.company_id)).map((cu) => cu.user_id),
+  );
+  const list = data.users.filter(
+    (u) => u.active !== false && (u.id === currentUserId || linked.has(u.id)),
+  );
+  return list.length > 0 ? list : data.users;
+}
+
+export function FormsProvider({
+  children,
+  currentUserId,
+}: {
+  children: ReactNode;
+  currentUserId: string;
+}) {
   const [task, setTask] = useState<{ value: Task | null; prefill: TaskPrefill } | null>(null);
   const [action, setAction] = useState<{ value: Action | null; prefill: ActionPrefill } | null>(
     null,
@@ -105,8 +125,9 @@ export function FormsProvider({ children }: { children: ReactNode }) {
       openAction: (a = null, prefill = {}) => setAction({ value: a, prefill }),
       openProject: (p = null, prefill = {}) => setProject({ value: p, prefill }),
       openCompany: (c = null) => setCompany({ value: c }),
+      currentUserId,
     }),
-    [],
+    [currentUserId],
   );
 
   return (
@@ -236,18 +257,22 @@ function TaskSheet({
   onClose: () => void;
 }) {
   const { data } = useWorkspace();
+  const { currentUserId } = useForms();
+  const assignableUsers = useAssignableUsers(currentUserId);
   const invalidate = useInvalidateWorkspace();
   const save = useServerFn(saveTask);
   const remove = useServerFn(deleteTask);
   const [saving, setSaving] = useState(false);
 
+  const onlyCompanyId = data.companies.length === 1 ? data.companies[0]!.id : "";
+
   const [form, setForm] = useState(() => ({
     title: task?.title ?? "",
     description: task?.description ?? "",
-    company_id: task?.company_id ?? prefill.companyId ?? "",
+    company_id: task?.company_id ?? prefill.companyId ?? onlyCompanyId,
     project_id: task?.project_id ?? prefill.projectId ?? "",
     action_id: task?.action_id ?? prefill.actionId ?? "",
-    responsible_user_id: task?.responsible_user_id ?? "",
+    responsible_user_id: task ? (task.responsible_user_id ?? "") : currentUserId,
     due_date: task?.due_date ?? todayISO(),
     priority: task?.priority ?? "normal",
     status: task?.status ?? "a_fazer",
@@ -366,7 +391,7 @@ function TaskSheet({
         </Field>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Responsável">
+        <Field label="Responsável (fica em Minhas tarefas)">
           <Select
             value={form.responsible_user_id || NONE}
             onValueChange={(v) => setForm({ ...form, responsible_user_id: v === NONE ? "" : v })}
@@ -376,7 +401,7 @@ function TaskSheet({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NONE}>Ninguém</SelectItem>
-              {data.users.map((u) => (
+              {assignableUsers.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.name}
                 </SelectItem>
@@ -448,18 +473,22 @@ function ActionSheet({
   onClose: () => void;
 }) {
   const { data } = useWorkspace();
+  const { currentUserId } = useForms();
+  const assignableUsers = useAssignableUsers(currentUserId);
   const invalidate = useInvalidateWorkspace();
   const save = useServerFn(saveAction);
   const remove = useServerFn(deleteAction);
   const [saving, setSaving] = useState(false);
 
+  const onlyCompanyId = data.companies.length === 1 ? data.companies[0]!.id : "";
+
   const [form, setForm] = useState(() => ({
     title: action?.title ?? "",
     description: action?.description ?? "",
-    company_id: action?.company_id ?? prefill.companyId ?? "",
+    company_id: action?.company_id ?? prefill.companyId ?? onlyCompanyId,
     project_id: action?.project_id ?? prefill.projectId ?? "",
     action_type: action?.action_type ?? "reuniao",
-    responsible_user_id: action?.responsible_user_id ?? "",
+    responsible_user_id: action ? (action.responsible_user_id ?? "") : currentUserId,
     action_date: action?.action_date ?? prefill.date ?? todayISO(),
     all_day: action?.all_day ?? false,
     start_time: action?.start_time ?? "09:00",
@@ -591,7 +620,7 @@ function ActionSheet({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NONE}>Ninguém</SelectItem>
-              {data.users.map((u) => (
+              {assignableUsers.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.name}
                 </SelectItem>
@@ -671,16 +700,20 @@ function ProjectSheet({
   onClose: () => void;
 }) {
   const { data } = useWorkspace();
+  const { currentUserId } = useForms();
+  const assignableUsers = useAssignableUsers(currentUserId);
   const invalidate = useInvalidateWorkspace();
   const save = useServerFn(saveProject);
   const remove = useServerFn(deleteProject);
   const [saving, setSaving] = useState(false);
 
+  const onlyCompanyId = data.companies.length === 1 ? data.companies[0]!.id : "";
+
   const [form, setForm] = useState(() => ({
     name: project?.name ?? "",
     description: project?.description ?? "",
-    company_id: project?.company_id ?? prefill.companyId ?? "",
-    responsible_user_id: project?.responsible_user_id ?? "",
+    company_id: project?.company_id ?? prefill.companyId ?? onlyCompanyId,
+    responsible_user_id: project ? (project.responsible_user_id ?? "") : currentUserId,
     start_date: project?.start_date ?? todayISO(),
     deadline: project?.deadline ?? "",
     status: project?.status ?? "planejamento",
@@ -784,7 +817,7 @@ function ProjectSheet({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NONE}>Ninguém</SelectItem>
-              {data.users.map((u) => (
+              {assignableUsers.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.name}
                 </SelectItem>
