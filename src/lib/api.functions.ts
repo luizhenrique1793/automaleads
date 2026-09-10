@@ -135,7 +135,8 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
     const filter = allowed ? sql`WHERE company_id = ANY(${allowed})` : sql``;
     const companyFilter = allowed ? sql`WHERE id = ANY(${allowed})` : sql``;
 
-    const [users, companies, projects, actions, tasks, logs, companyUsers] = await Promise.all([
+    const [users, companies, projects, actions, tasks, logs, companyUsers, series] =
+      await Promise.all([
       sql<User[]>`SELECT id, name, email, global_role, active FROM users ORDER BY name`,
       sql<Company[]>`SELECT id, name, logo_url, color, contact_name, phone, email, notes, status,
                        is_demo
@@ -151,7 +152,7 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(
                       all_day,
                       to_char(start_time,'HH24:MI') AS start_time,
                       to_char(end_time,'HH24:MI') AS end_time,
-                      status
+                      status, series_id, series_index
                     FROM actions ${filter} ORDER BY action_date, start_time NULLS FIRST`,
       sql<Task[]>`SELECT id, company_id, project_id, action_id, title, description,
                     responsible_user_id,
