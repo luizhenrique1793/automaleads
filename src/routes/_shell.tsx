@@ -173,7 +173,7 @@ function ShellLayout() {
   }
 
   return (
-    <FormsProvider>
+    <FormsProvider currentUserId={user.id}>
       <div className="flex min-h-screen bg-background">
         <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 lg:flex">
           <div className="mb-6 flex items-center gap-2 px-2">

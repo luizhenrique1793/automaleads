@@ -473,18 +473,22 @@ function ActionSheet({
   onClose: () => void;
 }) {
   const { data } = useWorkspace();
+  const { currentUserId } = useForms();
+  const assignableUsers = useAssignableUsers(currentUserId);
   const invalidate = useInvalidateWorkspace();
   const save = useServerFn(saveAction);
   const remove = useServerFn(deleteAction);
   const [saving, setSaving] = useState(false);
 
+  const onlyCompanyId = data.companies.length === 1 ? data.companies[0]!.id : "";
+
   const [form, setForm] = useState(() => ({
     title: action?.title ?? "",
     description: action?.description ?? "",
-    company_id: action?.company_id ?? prefill.companyId ?? "",
+    company_id: action?.company_id ?? prefill.companyId ?? onlyCompanyId,
     project_id: action?.project_id ?? prefill.projectId ?? "",
     action_type: action?.action_type ?? "reuniao",
-    responsible_user_id: action?.responsible_user_id ?? "",
+    responsible_user_id: action ? (action.responsible_user_id ?? "") : currentUserId,
     action_date: action?.action_date ?? prefill.date ?? todayISO(),
     all_day: action?.all_day ?? false,
     start_time: action?.start_time ?? "09:00",
