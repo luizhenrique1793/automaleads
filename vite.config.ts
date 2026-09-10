@@ -7,6 +7,10 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Deploy target: traditional Node.js server (Easypanel / VPS).
+  // Outputs .output/server/index.mjs, started with `node .output/server/index.mjs`.
+  // Inside Lovable's own build the platform pins its preset, so preview is unaffected.
+  nitro: { preset: "node-server" },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
