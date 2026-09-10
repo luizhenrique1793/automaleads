@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type {
   Action,
+  ActionSeries,
   ActivityLog,
   ClientPortal,
   Company,
@@ -10,6 +11,44 @@ import type {
   User,
   Workspace,
 } from "./types";
+
+/** Próxima data da série, contando `step` repetições a partir de `iso`. */
+function seriesDate(iso: string, frequency: string, step: number): string {
+  const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
+  if (frequency === "mensal") {
+    const base = new Date(Date.UTC(y, m - 1 + step, 1));
+    const lastDay = new Date(
+      Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    base.setUTCDate(Math.min(d, lastDay));
+    return base.toISOString().slice(0, 10);
+  }
+  const days = frequency === "quinzenal" ? 14 : 7;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days * step);
+  return dt.toISOString().slice(0, 10);
+}
+
+const MAX_SERIES = 60;
+
+function seriesDates(
+  start: string,
+  frequency: string,
+  opts: { occurrences?: number | null; until?: string | null },
+): string[] {
+  const dates = [start];
+  if (opts.until) {
+    for (let i = 1; i < MAX_SERIES; i++) {
+      const next = seriesDate(start, frequency, i);
+      if (next > opts.until) break;
+      dates.push(next);
+    }
+    return dates;
+  }
+  const total = Math.min(Math.max(opts.occurrences ?? 1, 1), MAX_SERIES);
+  for (let i = 1; i < total; i++) dates.push(seriesDate(start, frequency, i));
+  return dates;
+}
 
 /* ------------------------------------------------------------------ */
 /* Sessão                                                              */
