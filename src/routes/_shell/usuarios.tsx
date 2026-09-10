@@ -269,7 +269,7 @@ function UserSheet({ user, onClose }: { user: User | null; onClose: () => void }
               <p className="text-xs text-muted-foreground">
                 {isClientRole
                   ? "O cliente entra em uma tela própria e vê apenas as tarefas e ações destas empresas. É obrigatório marcar pelo menos uma."
-                  : "Se você marcar empresas, a pessoa vê e edita apenas elas. Sem marcar nada, ela continua vendo tudo."}
+                  : "A pessoa vê e edita apenas as empresas marcadas aqui. Se você não marcar nenhuma, ela começa sem empresas e pode cadastrar as dela, que ficam automaticamente sob a gestão dela."}
               </p>
               <div className="space-y-1.5">
                 {ws.companies.map((c) => (

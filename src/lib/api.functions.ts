@@ -61,7 +61,8 @@ type Sql = Awaited<ReturnType<typeof import("./db.server").db>>;
 
 /**
  * Empresas que o usuário pode ver.
- * null = sem restrição (admin, ou profissional sem vínculos marcados).
+ * null = sem restrição (somente administrador).
+ * Qualquer outro perfil vê apenas as empresas vinculadas a ele.
  */
 async function allowedCompanyIds(
   sql: Sql,
@@ -70,10 +71,6 @@ async function allowedCompanyIds(
   if (user.global_role === "administrador") return null;
   const rows = await sql<{ company_id: string }[]>`
     SELECT company_id FROM company_users WHERE user_id = ${user.id}`;
-  if (rows.length === 0) {
-    // Cliente sempre é restrito às empresas vinculadas; profissional sem vínculo vê tudo.
-    return user.global_role === "cliente" ? [] : null;
-  }
   return rows.map((r) => r.company_id);
 }
 
@@ -212,7 +209,7 @@ export const saveCompany = createServerFn({ method: "POST" })
     if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
     const allowed = await allowedCompanyIds(sql, user);
-    assertCompanyAccess(allowed, data.id ?? null);
+    if (data.id) assertCompanyAccess(allowed, data.id);
     const v = {
       name: data.name.trim(),
       color: data.color,
@@ -229,6 +226,12 @@ export const saveCompany = createServerFn({ method: "POST" })
     } else {
       const rows = await sql<{ id: string }[]>`INSERT INTO companies ${sql(v)} RETURNING id`;
       id = rows[0]!.id;
+      if (allowed) {
+        // Quem não é administrador passa a gerenciar a empresa que acabou de criar.
+        await sql`INSERT INTO company_users (company_id, user_id, role)
+                  VALUES (${id}, ${user.id}, ${user.global_role})
+                  ON CONFLICT (company_id, user_id) DO UPDATE SET role = EXCLUDED.role`;
+      }
     }
     await sql`INSERT INTO activity_logs (user_id, company_id, entity_type, entity_id, action, detail)
               VALUES (${user.id}, ${id}, 'empresa', ${id}, ${data.id ? "atualizou" : "criou"}, ${v.name})`;
