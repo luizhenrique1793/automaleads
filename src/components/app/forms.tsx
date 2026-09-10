@@ -391,7 +391,7 @@ function TaskSheet({
         </Field>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Responsável">
+        <Field label="Responsável (fica em Minhas tarefas)">
           <Select
             value={form.responsible_user_id || NONE}
             onValueChange={(v) => setForm({ ...form, responsible_user_id: v === NONE ? "" : v })}
@@ -401,7 +401,7 @@ function TaskSheet({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NONE}>Ninguém</SelectItem>
-              {data.users.map((u) => (
+              {assignableUsers.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.name}
                 </SelectItem>
