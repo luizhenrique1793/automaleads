@@ -182,4 +182,18 @@ CREATE TABLE IF NOT EXISTS app_meta (
 ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password boolean NOT NULL DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_done boolean NOT NULL DEFAULT false;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS action_series (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  frequency text NOT NULL DEFAULT 'semanal',
+  start_date date NOT NULL,
+  occurrences int NOT NULL DEFAULT 1,
+  created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE actions ADD COLUMN IF NOT EXISTS series_id uuid REFERENCES action_series(id) ON DELETE SET NULL;
+ALTER TABLE actions ADD COLUMN IF NOT EXISTS series_index int;
+CREATE INDEX IF NOT EXISTS idx_actions_series ON actions(series_id);
 `;

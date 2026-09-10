@@ -80,6 +80,24 @@ export interface Action {
   start_time: string | null;
   end_time: string | null;
   status: ActionStatus;
+  series_id?: string | null;
+  series_index?: number | null;
+}
+
+export type SeriesFrequency = "semanal" | "quinzenal" | "mensal";
+
+export const FREQUENCY_LABEL: Record<SeriesFrequency, string> = {
+  semanal: "Toda semana",
+  quinzenal: "A cada 15 dias",
+  mensal: "Todo mês",
+};
+
+export interface ActionSeries {
+  id: string;
+  company_id: string;
+  frequency: string;
+  start_date: string;
+  occurrences: number;
 }
 
 export interface Task {
