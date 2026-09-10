@@ -40,7 +40,11 @@ function CompaniesPage() {
       />
 
       {data.companies.length === 0 ? (
-        <EmptyState title="Nenhuma empresa cadastrada" description="Comece criando um cliente." />
+        <EmptyState
+          title="Nenhuma empresa cadastrada"
+          description="Cadastre a primeira empresa que você atende. Ela fica sob a sua gestão e aparece nos projetos, tarefas, ações e no calendário."
+        />
+
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {data.companies.map((c) => {
