@@ -82,6 +82,10 @@ function ActionsPage() {
           </Chip>
         ))}
         <span className="mx-1 w-px bg-border" />
+        <Chip active={onlyRepeated} onClick={() => setOnlyRepeated(!onlyRepeated)}>
+          Repetidos
+        </Chip>
+        <span className="mx-1 w-px bg-border" />
         {(["todas", ...(Object.keys(ACTION_STATUS_LABEL) as ActionStatus[])] as const).map((s) => (
           <Chip key={s} active={status === s} onClick={() => setStatus(s as ActionStatus | "todas")}>
             {s === "todas" ? "Todos os status" : ACTION_STATUS_LABEL[s as ActionStatus]}
