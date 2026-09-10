@@ -125,8 +125,9 @@ export function FormsProvider({
       openAction: (a = null, prefill = {}) => setAction({ value: a, prefill }),
       openProject: (p = null, prefill = {}) => setProject({ value: p, prefill }),
       openCompany: (c = null) => setCompany({ value: c }),
+      currentUserId,
     }),
-    [],
+    [currentUserId],
   );
 
   return (
