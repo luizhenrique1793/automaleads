@@ -496,7 +496,38 @@ function ActionSheet({
     status: action?.status ?? "planejada",
   }));
 
+  const extend = useServerFn(extendActionSeries);
+  const seriesId = action?.series_id ?? null;
+  const seriesTotal = seriesId
+    ? data.actions.filter((a) => a.series_id === seriesId).length
+    : 0;
+  const [scope, setScope] = useState<"um" | "futuros">("um");
+  const [extra, setExtra] = useState(4);
+  const [repeat, setRepeat] = useState({
+    on: false,
+    frequency: "semanal",
+    mode: "count" as "count" | "until",
+    occurrences: 8,
+    until: "",
+  });
+
   const projects = data.projects.filter((p) => p.company_id === form.company_id);
+
+  async function addMore() {
+    if (!action) return;
+    setSaving(true);
+    try {
+      const r = await extend({ data: { action_id: action.id, extra } });
+      await invalidate();
+      toast.success(`${r.created} encontro(s) adicionado(s).`);
+      onClose();
+    } catch {
+      toast.error("Não foi possível adicionar encontros.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
 
   async function submit() {
     if (!form.title.trim()) { toast.error("Informe o título da ação."); return; }
