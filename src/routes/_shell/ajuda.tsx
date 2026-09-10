@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Building2, CalendarDays, CheckSquare, FolderKanban, Sparkles } from "lucide-react";
+import { Building2, CalendarDays, CheckSquare, FolderKanban, Repeat, Sparkles, Users } from "lucide-react";
 import { PageHeader } from "@/components/app/primitives";
 
 export const Route = createFileRoute("/_shell/ajuda")({
