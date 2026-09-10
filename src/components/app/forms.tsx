@@ -817,7 +817,7 @@ function ProjectSheet({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NONE}>Ninguém</SelectItem>
-              {data.users.map((u) => (
+              {assignableUsers.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.name}
                 </SelectItem>
