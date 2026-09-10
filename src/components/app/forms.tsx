@@ -581,9 +581,11 @@ function ActionSheet({
   async function handleDelete() {
     if (!action) return;
     setSaving(true);
-    await remove({ data: { id: action.id } });
+    await remove({ data: { id: action.id, scope: seriesId ? scope : undefined } });
     await invalidate();
-    toast.success("Ação excluída.");
+    toast.success(
+      seriesId && scope === "futuros" ? "Este e os próximos encontros foram excluídos." : "Ação excluída.",
+    );
     onClose();
   }
 
