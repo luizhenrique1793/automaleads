@@ -209,7 +209,7 @@ export const saveCompany = createServerFn({ method: "POST" })
     if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
     const sql = await db();
     const allowed = await allowedCompanyIds(sql, user);
-    assertCompanyAccess(allowed, data.id ?? null);
+    if (data.id) assertCompanyAccess(allowed, data.id);
     const v = {
       name: data.name.trim(),
       color: data.color,
@@ -226,6 +226,12 @@ export const saveCompany = createServerFn({ method: "POST" })
     } else {
       const rows = await sql<{ id: string }[]>`INSERT INTO companies ${sql(v)} RETURNING id`;
       id = rows[0]!.id;
+      if (allowed) {
+        // Quem não é administrador passa a gerenciar a empresa que acabou de criar.
+        await sql`INSERT INTO company_users (company_id, user_id, role)
+                  VALUES (${id}, ${user.id}, ${user.global_role})
+                  ON CONFLICT (company_id, user_id) DO UPDATE SET role = EXCLUDED.role`;
+      }
     }
     await sql`INSERT INTO activity_logs (user_id, company_id, entity_type, entity_id, action, detail)
               VALUES (${user.id}, ${id}, 'empresa', ${id}, ${data.id ? "atualizou" : "criou"}, ${v.name})`;
