@@ -127,6 +127,11 @@ function ActionsPage() {
                     ) : null}
                     {project ? <span>· {project.name}</span> : null}
                     {owner ? <span>· {owner.name}</span> : null}
+                    {a.series_id && a.series_index ? (
+                      <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold">
+                        Repete · {a.series_index} de {seriesCount.get(a.series_id) ?? a.series_index}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-1.5">
