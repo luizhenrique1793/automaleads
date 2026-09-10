@@ -61,7 +61,8 @@ type Sql = Awaited<ReturnType<typeof import("./db.server").db>>;
 
 /**
  * Empresas que o usuário pode ver.
- * null = sem restrição (admin, ou profissional sem vínculos marcados).
+ * null = sem restrição (somente administrador).
+ * Qualquer outro perfil vê apenas as empresas vinculadas a ele.
  */
 async function allowedCompanyIds(
   sql: Sql,
@@ -70,10 +71,6 @@ async function allowedCompanyIds(
   if (user.global_role === "administrador") return null;
   const rows = await sql<{ company_id: string }[]>`
     SELECT company_id FROM company_users WHERE user_id = ${user.id}`;
-  if (rows.length === 0) {
-    // Cliente sempre é restrito às empresas vinculadas; profissional sem vínculo vê tudo.
-    return user.global_role === "cliente" ? [] : null;
-  }
   return rows.map((r) => r.company_id);
 }
 
