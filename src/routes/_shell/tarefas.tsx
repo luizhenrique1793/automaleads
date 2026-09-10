@@ -124,6 +124,21 @@ function TasksPage() {
 
       <FilterBar value={filters} onChange={setFilters} />
 
+      {quick === "minhas" && tasks.length === 0 && unassignedCount > 0 ? (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2.5">
+          <p className="text-sm text-muted-foreground">
+            {unassignedCount} tarefa(s) em aberto estão sem responsável, por isso não aparecem aqui.
+          </p>
+          <button
+            type="button"
+            onClick={() => setQuick("todas")}
+            className="text-xs font-semibold text-primary hover:underline"
+          >
+            Ver em Todas
+          </button>
+        </div>
+      ) : null}
+
       <TaskList tasks={tasks} emptyTitle="Nenhuma tarefa nesta visão" />
     </>
   );
