@@ -38,6 +38,7 @@ import {
   ACTION_STATUS_LABEL,
   ACTION_TYPE_LABEL,
   COMPANY_STATUS_LABEL,
+  FREQUENCY_LABEL,
   PROJECT_STATUS_LABEL,
   TASK_PRIORITY_LABEL,
   TASK_STATUS_LABEL,
@@ -51,6 +52,7 @@ import {
   deleteCompany,
   deleteProject,
   deleteTask,
+  extendActionSeries,
   saveAction,
   saveCompany,
   saveProject,
@@ -496,7 +498,38 @@ function ActionSheet({
     status: action?.status ?? "planejada",
   }));
 
+  const extend = useServerFn(extendActionSeries);
+  const seriesId = action?.series_id ?? null;
+  const seriesTotal = seriesId
+    ? data.actions.filter((a) => a.series_id === seriesId).length
+    : 0;
+  const [scope, setScope] = useState<"um" | "futuros">("um");
+  const [extra, setExtra] = useState(4);
+  const [repeat, setRepeat] = useState({
+    on: false,
+    frequency: "semanal",
+    mode: "count" as "count" | "until",
+    occurrences: 8,
+    until: "",
+  });
+
   const projects = data.projects.filter((p) => p.company_id === form.company_id);
+
+  async function addMore() {
+    if (!action) return;
+    setSaving(true);
+    try {
+      const r = await extend({ data: { action_id: action.id, extra } });
+      await invalidate();
+      toast.success(`${r.created} encontro(s) adicionado(s).`);
+      onClose();
+    } catch {
+      toast.error("Não foi possível adicionar encontros.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
 
   async function submit() {
     if (!form.title.trim()) { toast.error("Informe o título da ação."); return; }
@@ -504,7 +537,7 @@ function ActionSheet({
     if (!form.all_day && !form.start_time) { toast.error("Informe o horário inicial."); return; }
     setSaving(true);
     try {
-      await save({
+      const res = await save({
         data: {
           id: action?.id ?? null,
           company_id: form.company_id,
@@ -518,10 +551,27 @@ function ActionSheet({
           start_time: form.start_time || null,
           end_time: form.end_time || null,
           status: form.status,
+          repeat:
+            !action && repeat.on
+              ? {
+                  frequency: repeat.frequency,
+                  occurrences: repeat.mode === "count" ? repeat.occurrences : null,
+                  until: repeat.mode === "until" ? repeat.until || null : null,
+                }
+              : null,
+          scope: action && seriesId ? scope : undefined,
         },
       });
       await invalidate();
-      toast.success(action ? "Ação atualizada." : "Ação criada.");
+      toast.success(
+        action
+          ? scope === "futuros" && seriesId
+            ? "Este e os próximos encontros foram atualizados."
+            : "Ação atualizada."
+          : res.created > 1
+            ? `${res.created} compromissos criados.`
+            : "Ação criada.",
+      );
       onClose();
     } catch {
       toast.error("Não foi possível salvar a ação.");
@@ -533,9 +583,11 @@ function ActionSheet({
   async function handleDelete() {
     if (!action) return;
     setSaving(true);
-    await remove({ data: { id: action.id } });
+    await remove({ data: { id: action.id, scope: seriesId ? scope : undefined } });
     await invalidate();
-    toast.success("Ação excluída.");
+    toast.success(
+      seriesId && scope === "futuros" ? "Este e os próximos encontros foram excluídos." : "Ação excluída.",
+    );
     onClose();
   }
 
@@ -629,13 +681,120 @@ function ActionSheet({
           </Select>
         </Field>
       </div>
-      <Field label="Data">
+      <Field label={seriesId ? "Data deste encontro" : "Data"}>
         <Input
           type="date"
           value={form.action_date}
           onChange={(e) => setForm({ ...form, action_date: e.target.value })}
         />
       </Field>
+
+      {!action ? (
+        <div className="space-y-3 rounded-lg border border-border px-3 py-2.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium">Repetir este compromisso</span>
+              <p className="text-xs text-muted-foreground">
+                Cria vários encontros seguidos (treinamentos, atendimentos, reuniões fixas).
+              </p>
+            </div>
+            <Switch
+              checked={repeat.on}
+              onCheckedChange={(v) => setRepeat({ ...repeat, on: v })}
+            />
+          </div>
+          {repeat.on ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Com que frequência">
+                <Select
+                  value={repeat.frequency}
+                  onValueChange={(v) => setRepeat({ ...repeat, frequency: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(FREQUENCY_LABEL).map(([k, l]) => (
+                      <SelectItem key={k} value={k}>
+                        {l}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Até quando">
+                <Select
+                  value={repeat.mode}
+                  onValueChange={(v) => setRepeat({ ...repeat, mode: v as "count" | "until" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="count">Número de encontros</SelectItem>
+                    <SelectItem value="until">Até uma data</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              {repeat.mode === "count" ? (
+                <Field label="Quantos encontros (máx. 60)">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={repeat.occurrences}
+                    onChange={(e) =>
+                      setRepeat({ ...repeat, occurrences: Number(e.target.value) || 1 })
+                    }
+                  />
+                </Field>
+              ) : (
+                <Field label="Data final">
+                  <Input
+                    type="date"
+                    value={repeat.until}
+                    onChange={(e) => setRepeat({ ...repeat, until: e.target.value })}
+                  />
+                </Field>
+              )}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {seriesId ? (
+        <div className="space-y-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+          <p className="text-sm font-medium">
+            Compromisso que se repete{" "}
+            {action?.series_index ? `(${action.series_index} de ${seriesTotal})` : ""}
+          </p>
+          <Field label="Ao salvar ou excluir, aplicar a">
+            <Select value={scope} onValueChange={(v) => setScope(v as "um" | "futuros")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="um">Somente este dia</SelectItem>
+                <SelectItem value="futuros">Este e os próximos</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <div className="flex items-end gap-2">
+            <Field label="Adicionar mais encontros no final">
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={extra}
+                onChange={(e) => setExtra(Number(e.target.value) || 1)}
+              />
+            </Field>
+            <Button type="button" variant="outline" disabled={saving} onClick={addMore}>
+              Adicionar
+            </Button>
+          </div>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
         <span className="text-sm font-medium">Dia inteiro</span>
         <Switch

@@ -41,10 +41,17 @@ function ActionsPage() {
   const [filters, setFilters] = useState(emptyFilters);
   const [status, setStatus] = useState<ActionStatus | "todas">("todas");
   const [range, setRange] = useState<"futuras" | "passadas" | "todas">("futuras");
+  const [onlyRepeated, setOnlyRepeated] = useState(false);
+
+  const seriesCount = new Map<string, number>();
+  for (const a of data.actions) {
+    if (a.series_id) seriesCount.set(a.series_id, (seriesCount.get(a.series_id) ?? 0) + 1);
+  }
 
   const actions = data.actions
     .filter((a) => {
       if (!matchFilters(a, filters, false)) return false;
+      if (onlyRepeated && !a.series_id) return false;
       if (status !== "todas" && a.status !== status) return false;
       if (range === "futuras" && a.action_date < today) return false;
       if (range === "passadas" && a.action_date >= today) return false;
@@ -74,6 +81,10 @@ function ActionsPage() {
             {r === "futuras" ? "Próximas" : r === "passadas" ? "Anteriores" : "Todas"}
           </Chip>
         ))}
+        <span className="mx-1 w-px bg-border" />
+        <Chip active={onlyRepeated} onClick={() => setOnlyRepeated(!onlyRepeated)}>
+          Repetidos
+        </Chip>
         <span className="mx-1 w-px bg-border" />
         {(["todas", ...(Object.keys(ACTION_STATUS_LABEL) as ActionStatus[])] as const).map((s) => (
           <Chip key={s} active={status === s} onClick={() => setStatus(s as ActionStatus | "todas")}>
@@ -116,6 +127,11 @@ function ActionsPage() {
                     ) : null}
                     {project ? <span>· {project.name}</span> : null}
                     {owner ? <span>· {owner.name}</span> : null}
+                    {a.series_id && a.series_index ? (
+                      <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold">
+                        Repete · {a.series_index} de {seriesCount.get(a.series_id) ?? a.series_index}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-1.5">

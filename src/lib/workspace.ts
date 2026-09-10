@@ -16,6 +16,7 @@ const EMPTY: Workspace = {
   tasks: [],
   logs: [],
   companyUsers: [],
+  series: [],
 };
 
 export function useWorkspace() {
