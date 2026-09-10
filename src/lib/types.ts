@@ -140,6 +140,7 @@ export interface Workspace {
   tasks: Task[];
   logs: ActivityLog[];
   companyUsers: CompanyUser[];
+  series: ActionSeries[];
 }
 
 export interface ClientPortal {
