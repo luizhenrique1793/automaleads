@@ -374,9 +374,9 @@ export interface ActionInput {
   end_time?: string | null;
   status: string;
   /** Só na criação: gera vários compromissos de uma vez. */
-  repeat?: { frequency: string; occurrences?: number | null; until?: string | null } | null;
+  repeat?: { frequency: string; occurrences?: number | null; until?: string | null } | null | undefined;
   /** Só na edição de um compromisso de série. */
-  scope?: "um" | "futuros";
+  scope?: "um" | "futuros" | undefined;
 }
 
 export const saveAction = createServerFn({ method: "POST" })
@@ -522,7 +522,7 @@ export const extendActionSeries = createServerFn({ method: "POST" })
   });
 
 export const deleteAction = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; scope?: "um" | "futuros" }) => d)
+  .inputValidator((d: { id: string; scope?: "um" | "futuros" | undefined }) => d)
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
