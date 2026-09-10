@@ -679,13 +679,120 @@ function ActionSheet({
           </Select>
         </Field>
       </div>
-      <Field label="Data">
+      <Field label={seriesId ? "Data deste encontro" : "Data"}>
         <Input
           type="date"
           value={form.action_date}
           onChange={(e) => setForm({ ...form, action_date: e.target.value })}
         />
       </Field>
+
+      {!action ? (
+        <div className="space-y-3 rounded-lg border border-border px-3 py-2.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium">Repetir este compromisso</span>
+              <p className="text-xs text-muted-foreground">
+                Cria vários encontros seguidos (treinamentos, atendimentos, reuniões fixas).
+              </p>
+            </div>
+            <Switch
+              checked={repeat.on}
+              onCheckedChange={(v) => setRepeat({ ...repeat, on: v })}
+            />
+          </div>
+          {repeat.on ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Com que frequência">
+                <Select
+                  value={repeat.frequency}
+                  onValueChange={(v) => setRepeat({ ...repeat, frequency: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(FREQUENCY_LABEL).map(([k, l]) => (
+                      <SelectItem key={k} value={k}>
+                        {l}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Até quando">
+                <Select
+                  value={repeat.mode}
+                  onValueChange={(v) => setRepeat({ ...repeat, mode: v as "count" | "until" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="count">Número de encontros</SelectItem>
+                    <SelectItem value="until">Até uma data</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              {repeat.mode === "count" ? (
+                <Field label="Quantos encontros (máx. 60)">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={repeat.occurrences}
+                    onChange={(e) =>
+                      setRepeat({ ...repeat, occurrences: Number(e.target.value) || 1 })
+                    }
+                  />
+                </Field>
+              ) : (
+                <Field label="Data final">
+                  <Input
+                    type="date"
+                    value={repeat.until}
+                    onChange={(e) => setRepeat({ ...repeat, until: e.target.value })}
+                  />
+                </Field>
+              )}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {seriesId ? (
+        <div className="space-y-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+          <p className="text-sm font-medium">
+            Compromisso que se repete{" "}
+            {action?.series_index ? `(${action.series_index} de ${seriesTotal})` : ""}
+          </p>
+          <Field label="Ao salvar ou excluir, aplicar a">
+            <Select value={scope} onValueChange={(v) => setScope(v as "um" | "futuros")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="um">Somente este dia</SelectItem>
+                <SelectItem value="futuros">Este e os próximos</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <div className="flex items-end gap-2">
+            <Field label="Adicionar mais encontros no final">
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={extra}
+                onChange={(e) => setExtra(Number(e.target.value) || 1)}
+              />
+            </Field>
+            <Button type="button" variant="outline" disabled={saving} onClick={addMore}>
+              Adicionar
+            </Button>
+          </div>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
         <span className="text-sm font-medium">Dia inteiro</span>
         <Switch
