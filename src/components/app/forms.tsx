@@ -257,18 +257,22 @@ function TaskSheet({
   onClose: () => void;
 }) {
   const { data } = useWorkspace();
+  const { currentUserId } = useForms();
+  const assignableUsers = useAssignableUsers(currentUserId);
   const invalidate = useInvalidateWorkspace();
   const save = useServerFn(saveTask);
   const remove = useServerFn(deleteTask);
   const [saving, setSaving] = useState(false);
 
+  const onlyCompanyId = data.companies.length === 1 ? data.companies[0]!.id : "";
+
   const [form, setForm] = useState(() => ({
     title: task?.title ?? "",
     description: task?.description ?? "",
-    company_id: task?.company_id ?? prefill.companyId ?? "",
+    company_id: task?.company_id ?? prefill.companyId ?? onlyCompanyId,
     project_id: task?.project_id ?? prefill.projectId ?? "",
     action_id: task?.action_id ?? prefill.actionId ?? "",
-    responsible_user_id: task?.responsible_user_id ?? "",
+    responsible_user_id: task ? (task.responsible_user_id ?? "") : currentUserId,
     due_date: task?.due_date ?? todayISO(),
     priority: task?.priority ?? "normal",
     status: task?.status ?? "a_fazer",
