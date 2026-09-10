@@ -700,16 +700,20 @@ function ProjectSheet({
   onClose: () => void;
 }) {
   const { data } = useWorkspace();
+  const { currentUserId } = useForms();
+  const assignableUsers = useAssignableUsers(currentUserId);
   const invalidate = useInvalidateWorkspace();
   const save = useServerFn(saveProject);
   const remove = useServerFn(deleteProject);
   const [saving, setSaving] = useState(false);
 
+  const onlyCompanyId = data.companies.length === 1 ? data.companies[0]!.id : "";
+
   const [form, setForm] = useState(() => ({
     name: project?.name ?? "",
     description: project?.description ?? "",
-    company_id: project?.company_id ?? prefill.companyId ?? "",
-    responsible_user_id: project?.responsible_user_id ?? "",
+    company_id: project?.company_id ?? prefill.companyId ?? onlyCompanyId,
+    responsible_user_id: project ? (project.responsible_user_id ?? "") : currentUserId,
     start_date: project?.start_date ?? todayISO(),
     deadline: project?.deadline ?? "",
     status: project?.status ?? "planejamento",
