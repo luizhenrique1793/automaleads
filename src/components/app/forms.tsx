@@ -535,7 +535,7 @@ function ActionSheet({
     if (!form.all_day && !form.start_time) { toast.error("Informe o horário inicial."); return; }
     setSaving(true);
     try {
-      await save({
+      const res = await save({
         data: {
           id: action?.id ?? null,
           company_id: form.company_id,
@@ -549,10 +549,27 @@ function ActionSheet({
           start_time: form.start_time || null,
           end_time: form.end_time || null,
           status: form.status,
+          repeat:
+            !action && repeat.on
+              ? {
+                  frequency: repeat.frequency,
+                  occurrences: repeat.mode === "count" ? repeat.occurrences : null,
+                  until: repeat.mode === "until" ? repeat.until || null : null,
+                }
+              : null,
+          scope: action && seriesId ? scope : undefined,
         },
       });
       await invalidate();
-      toast.success(action ? "Ação atualizada." : "Ação criada.");
+      toast.success(
+        action
+          ? scope === "futuros" && seriesId
+            ? "Este e os próximos encontros foram atualizados."
+            : "Ação atualizada."
+          : res.created > 1
+            ? `${res.created} compromissos criados.`
+            : "Ação criada.",
+      );
       onClose();
     } catch {
       toast.error("Não foi possível salvar a ação.");
