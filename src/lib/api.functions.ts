@@ -373,6 +373,10 @@ export interface ActionInput {
   start_time?: string | null;
   end_time?: string | null;
   status: string;
+  /** Só na criação: gera vários compromissos de uma vez. */
+  repeat?: { frequency: string; occurrences?: number | null; until?: string | null } | null;
+  /** Só na edição de um compromisso de série. */
+  scope?: "um" | "futuros";
 }
 
 export const saveAction = createServerFn({ method: "POST" })
@@ -399,27 +403,142 @@ export const saveAction = createServerFn({ method: "POST" })
       status: data.status,
     };
     let id = data.id ?? null;
-    if (id) {
+    let created = 1;
+
+    if (!id && data.repeat) {
+      const frequency = data.repeat.frequency;
+      const dates = seriesDates(data.action_date, frequency, {
+        occurrences: data.repeat.occurrences ?? null,
+        until: data.repeat.until ?? null,
+      });
+      const seriesRows = await sql<{ id: string }[]>`
+        INSERT INTO action_series (company_id, frequency, start_date, occurrences, created_by)
+        VALUES (${v.company_id}, ${frequency}, ${data.action_date}, ${dates.length}, ${user.id})
+        RETURNING id`;
+      const seriesId = seriesRows[0]!.id;
+      const rows = await sql<{ id: string }[]>`
+        INSERT INTO actions ${sql(
+          dates.map((d, i) => ({ ...v, action_date: d, series_id: seriesId, series_index: i + 1 })),
+        )} RETURNING id`;
+      id = rows[0]!.id;
+      created = dates.length;
+    } else if (id) {
       await sql`UPDATE actions SET ${sql(v)}, updated_at = now() WHERE id = ${id}`;
+      if (data.scope === "futuros") {
+        const cur = await sql<{ series_id: string | null; series_index: number | null }[]>`
+          SELECT series_id, series_index FROM actions WHERE id = ${id}`;
+        const s = cur[0];
+        if (s?.series_id) {
+          const later = {
+            title: v.title,
+            description: v.description,
+            action_type: v.action_type,
+            responsible_user_id: v.responsible_user_id,
+            all_day: v.all_day,
+            start_time: v.start_time,
+            end_time: v.end_time,
+            project_id: v.project_id,
+          };
+          await sql`UPDATE actions SET ${sql(later)}, updated_at = now()
+                    WHERE series_id = ${s.series_id} AND series_index > ${s.series_index ?? 0}`;
+        }
+      }
     } else {
       const rows = await sql<{ id: string }[]>`INSERT INTO actions ${sql(v)} RETURNING id`;
       id = rows[0]!.id;
     }
+
     await sql`INSERT INTO activity_logs (user_id, company_id, entity_type, entity_id, action, detail)
               VALUES (${user.id}, ${v.company_id}, 'acao', ${id}, ${data.id ? "atualizou" : "criou"}, ${v.title})`;
-    return { id };
+    return { id, created };
+  });
+
+/** Acrescenta encontros ao final de uma série existente. */
+export const extendActionSeries = createServerFn({ method: "POST" })
+  .inputValidator((d: { action_id: string; extra: number }) => d)
+  .handler(async ({ data }) => {
+    const { requireUser } = await import("./auth.server");
+    const { db } = await import("./db.server");
+    const user = await requireUser();
+    if (user.global_role === "cliente") throw new Error("ACESSO_RESTRITO");
+    const sql = await db();
+    const allowed = await allowedCompanyIds(sql, user);
+    const base = await sql<
+      {
+        series_id: string | null;
+        company_id: string;
+        project_id: string | null;
+        title: string;
+        description: string | null;
+        action_type: string;
+        responsible_user_id: string | null;
+        all_day: boolean;
+        start_time: string | null;
+        end_time: string | null;
+      }[]
+    >`SELECT series_id, company_id, project_id, title, description, action_type,
+        responsible_user_id, all_day,
+        to_char(start_time,'HH24:MI') AS start_time,
+        to_char(end_time,'HH24:MI') AS end_time
+      FROM actions WHERE id = ${data.action_id}`;
+    const row = base[0];
+    if (!row?.series_id) throw new Error("SEM_SERIE");
+    assertCompanyAccess(allowed, row.company_id);
+
+    const info = await sql<{ frequency: string; total: number; last_date: string; last_index: number }[]>`
+      SELECT s.frequency,
+             count(a.id)::int AS total,
+             to_char(max(a.action_date),'YYYY-MM-DD') AS last_date,
+             max(a.series_index)::int AS last_index
+      FROM action_series s JOIN actions a ON a.series_id = s.id
+      WHERE s.id = ${row.series_id}
+      GROUP BY s.frequency`;
+    const meta = info[0];
+    if (!meta) throw new Error("SEM_SERIE");
+
+    const extra = Math.max(1, Math.min(data.extra, MAX_SERIES - meta.total));
+    if (extra <= 0) return { created: 0 };
+
+    const values = Array.from({ length: extra }, (_, i) => ({
+      company_id: row.company_id,
+      project_id: row.project_id,
+      title: row.title,
+      description: row.description,
+      action_type: row.action_type,
+      responsible_user_id: row.responsible_user_id,
+      action_date: seriesDate(meta.last_date, meta.frequency, i + 1),
+      all_day: row.all_day,
+      start_time: row.all_day ? null : row.start_time,
+      end_time: row.all_day ? null : row.end_time,
+      status: "planejada",
+      series_id: row.series_id,
+      series_index: meta.last_index + i + 1,
+    }));
+    await sql`INSERT INTO actions ${sql(values)}`;
+    await sql`UPDATE action_series SET occurrences = ${meta.total + extra} WHERE id = ${row.series_id}`;
+    await sql`INSERT INTO activity_logs (user_id, company_id, entity_type, entity_id, action, detail)
+              VALUES (${user.id}, ${row.company_id}, 'acao', ${data.action_id}, 'estendeu série', ${row.title})`;
+    return { created: extra };
   });
 
 export const deleteAction = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string }) => d)
+  .inputValidator((d: { id: string; scope?: "um" | "futuros" }) => d)
   .handler(async ({ data }) => {
     const { requireUser } = await import("./auth.server");
     const { db } = await import("./db.server");
     const user = await requireUser();
     const sql = await db();
     const allowed = await allowedCompanyIds(sql, user);
-    const owner = await sql<{ company_id: string }[]>`SELECT company_id FROM actions WHERE id = ${data.id}`;
-    assertCompanyAccess(allowed, owner[0]?.company_id ?? null);
+    const owner = await sql<
+      { company_id: string; series_id: string | null; series_index: number | null }[]
+    >`SELECT company_id, series_id, series_index FROM actions WHERE id = ${data.id}`;
+    const row = owner[0];
+    assertCompanyAccess(allowed, row?.company_id ?? null);
+    if (data.scope === "futuros" && row?.series_id) {
+      await sql`DELETE FROM actions
+                WHERE series_id = ${row.series_id} AND series_index >= ${row.series_index ?? 0}`;
+      return { ok: true };
+    }
     await sql`DELETE FROM actions WHERE id = ${data.id}`;
     return { ok: true };
   });
