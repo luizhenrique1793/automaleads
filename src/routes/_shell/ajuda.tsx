@@ -166,6 +166,56 @@ function HelpPage() {
         </div>
       </section>
 
+      <section className="mb-8">
+        <h2 className="mb-3 flex items-center gap-1.5 text-sm font-bold">
+          <Repeat className="size-3.5 text-primary" /> Compromissos que se repetem
+        </h2>
+        <div className="card-surface divide-y divide-border">
+          <div className="px-4 py-3">
+            <p className="text-sm font-semibold">Como criar</p>
+            <p className="text-sm text-muted-foreground">
+              Ao cadastrar uma ação (reunião, treinamento, atendimento), ative a chave{" "}
+              <strong>Repetir este compromisso</strong>. Escolha a frequência — toda semana, a cada
+              15 dias ou todo mês — e até quando repete: por número de encontros (ex.: 8 semanas de
+              treinamento) ou até uma data final. O limite é de 60 encontros por série.
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-sm font-semibold">Onde aparecem</p>
+            <p className="text-sm text-muted-foreground">
+              Cada encontro vira uma ação normal: aparece no Início, na Minha semana, no Calendário,
+              em Ações e na página da empresa, com a marca “Repete · 3 de 8”. Na tela Ações, o filtro{" "}
+              <strong>Repetidos</strong> mostra só essas séries.
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-sm font-semibold">Editar ou excluir</p>
+            <p className="text-sm text-muted-foreground">
+              Ao alterar um encontro que se repete, o sistema pergunta se a mudança vale{" "}
+              <strong>só para aquele dia</strong> (ex.: remarcar uma semana) ou para{" "}
+              <strong>este e os próximos</strong>. Encontros que já passaram nunca são apagados
+              automaticamente. Também é possível acrescentar mais encontros a uma série pelo botão da
+              lista de Ações.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-3 flex items-center gap-1.5 text-sm font-bold">
+          <Users className="size-3.5 text-primary" /> Portal do cliente
+        </h2>
+        <div className="card-surface px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            Cada empresa atendida pode receber um acesso próprio. Ao entrar, o cliente cai em um
+            painel separado, sem os menus internos: ele vê apenas as tarefas e ações das empresas
+            dele, em modo de consulta — não consegue criar nem alterar nada. O painel mostra o que
+            está atrasado, o que vence hoje, as ações do dia e os próximos prazos. O vínculo entre o
+            cliente e as empresas é feito pelo administrador na tela Usuários.
+          </p>
+        </div>
+      </section>
+
       <section>
         <h2 className="mb-3 text-sm font-bold">Perguntas frequentes</h2>
         <div className="card-surface divide-y divide-border">
