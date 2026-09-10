@@ -83,6 +83,10 @@ function TasksPage() {
     }
   });
 
+  const unassignedCount = data.tasks.filter(
+    (t) => !t.responsible_user_id && t.status !== "concluida" && t.status !== "cancelada",
+  ).length;
+
   return (
     <>
       <PageHeader
