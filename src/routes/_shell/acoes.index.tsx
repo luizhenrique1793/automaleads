@@ -41,10 +41,17 @@ function ActionsPage() {
   const [filters, setFilters] = useState(emptyFilters);
   const [status, setStatus] = useState<ActionStatus | "todas">("todas");
   const [range, setRange] = useState<"futuras" | "passadas" | "todas">("futuras");
+  const [onlyRepeated, setOnlyRepeated] = useState(false);
+
+  const seriesCount = new Map<string, number>();
+  for (const a of data.actions) {
+    if (a.series_id) seriesCount.set(a.series_id, (seriesCount.get(a.series_id) ?? 0) + 1);
+  }
 
   const actions = data.actions
     .filter((a) => {
       if (!matchFilters(a, filters, false)) return false;
+      if (onlyRepeated && !a.series_id) return false;
       if (status !== "todas" && a.status !== status) return false;
       if (range === "futuras" && a.action_date < today) return false;
       if (range === "passadas" && a.action_date >= today) return false;
