@@ -78,6 +78,7 @@ interface FormsContextValue {
   openAction: (action?: Action | null, prefill?: ActionPrefill) => void;
   openProject: (project?: Project | null, prefill?: ProjectPrefill) => void;
   openCompany: (company?: Company | null) => void;
+  currentUserId: string;
 }
 
 const FormsContext = createContext<FormsContextValue | null>(null);
@@ -88,7 +89,26 @@ export function useForms() {
   return ctx;
 }
 
-export function FormsProvider({ children }: { children: ReactNode }) {
+/** Usuários que podem ser responsáveis: quem compartilha empresa comigo + eu. */
+function useAssignableUsers(currentUserId: string) {
+  const { data } = useWorkspace();
+  const visibleCompanyIds = new Set(data.companies.map((c) => c.id));
+  const linked = new Set(
+    data.companyUsers.filter((cu) => visibleCompanyIds.has(cu.company_id)).map((cu) => cu.user_id),
+  );
+  const list = data.users.filter(
+    (u) => u.active !== false && (u.id === currentUserId || linked.has(u.id)),
+  );
+  return list.length > 0 ? list : data.users;
+}
+
+export function FormsProvider({
+  children,
+  currentUserId,
+}: {
+  children: ReactNode;
+  currentUserId: string;
+}) {
   const [task, setTask] = useState<{ value: Task | null; prefill: TaskPrefill } | null>(null);
   const [action, setAction] = useState<{ value: Action | null; prefill: ActionPrefill } | null>(
     null,
